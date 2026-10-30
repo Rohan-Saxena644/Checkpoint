@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "strict": true, "esModuleInterop": true, "skipLibCheck": true, "jsx": "react-jsx", "lib": ["ES2022", "DOM"], "types": ["node", "vite/client"], "baseUrl": ".", "paths": { "@checkpoint/core": ["packages/core/src/index.ts"], "@checkpoint/twitch": ["packages/twitch/src/index.ts"] } },
+  "include": ["packages/**/*.ts", "apps/**/*.ts", "apps/**/*.tsx", "examples/**/*.ts", "tests/**/*.ts", "*.ts"]
+}
