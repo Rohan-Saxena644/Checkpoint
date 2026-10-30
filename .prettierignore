@@ -1,0 +1,9 @@
+node_modules/
+**/dist/
+**/dist-server/
+.npm-cache/
+.local/
+test-results/
+playwright-report/
+package-lock.json
+.env*
