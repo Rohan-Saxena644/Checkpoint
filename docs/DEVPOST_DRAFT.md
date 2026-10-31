@@ -8,7 +8,7 @@ Streamers want their community to matter without surrendering the game to a cons
 
 The Last Beacon is an original top-down courier expedition. The streamer genuinely pilots the character, collects fragments and dodges telegraphed storm strikes. At three beacons the community chooses a risky or safe route, sends a bounded supply effect, and cooperatively charges protection for the final crossing. A broadcaster selects an explicit crew-size preset; the game never guesses audience size from chat. Fair fallbacks keep every route playable without viewers.
 
-Checkpoint is also a reusable TypeScript SDK with choice and cooperative-goal primitives, typed lifecycle events, stable outcome IDs, deterministic ties, replacement votes, distinct-user contribution limits, bounded deduplication and injectable timing. A tiny independent signal panel demonstrates reuse beyond the game.
+Checkpoint is also a reusable TypeScript SDK with choice and cooperative-goal primitives, typed lifecycle events, stable outcome IDs, deterministic ties, replacement votes, distinct-user contribution limits, bounded deduplication and injectable timing. The experimental 0.2.0 core has zero runtime dependencies and consumes generic actions. A tiny independent signal panel and an external package-archive consumer demonstrate reuse beyond the game.
 
 ## Twitch integration
 
@@ -34,3 +34,7 @@ Resolution happens once per window in the running authoritative process; the gam
 - Session ID: **pending actual `/status` output**.
 - Screenshots: use genuine captured game/overlay images; exclude secrets.
 - Team/eligibility and final Devpost submission: **owner review required**.
+
+## Final-phase evidence disclosure
+
+The demonstrated workflow uses normal controls and unchanged 18-second windows. Final verification covers the full simulated expedition, no-viewer fallback, actual storm damage and restart, visible route/supply effects, small-crew cooperation, overlay permissions and transport/input reliability. Recording scripts capture actual browser frames and assemble a clearly labeled, silent, incomplete review. No real Twitch footage or genuine Codex desktop clip has been fabricated. Configure the registered app and complete the manual clips before claiming live verification or a finished submission video. The implementation uses Codex at build time, not runtime AI.

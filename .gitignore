@@ -12,3 +12,6 @@ coverage/
 *.log
 *.tsbuildinfo
 *.tgz
+submission/footage/
+submission/render/
+submission/manual/

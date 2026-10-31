@@ -1,0 +1,29 @@
+# Clip manifest
+
+Target edit: **160s**. Automated source times are emitted to `submission/footage/capture-report.json`; `review-plan.json` describes the actual cuts. Files remain local and Git-ignored. Count only finalized, decoded files as usable evidence.
+
+| File                                                                          | Evidence type                                        | Use / status                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `submission/footage/simulated-expedition.mp4`                                 | **Synthetic input; actual browser gameplay**         | Normal WASD/buttons, natural 18s windows, route consequence, shield absorption, two-person synthetic goal, win and clean restart. Opening/conclusion and provisional route/gate slots. Never label live Twitch. |
+| `submission/footage/simulated-reliability.mp4`                                | **Simulated transport/input**                        | Invalid/repeated/duplicate-delivery/late inputs, frozen timer, resume and ignored duplicate outcome. Use in the explicitly simulated reliability segment.                                                       |
+| `submission/footage/sdk-example.mp4`                                          | **Actual development evidence**                      | Existing local-button panel, actual repository source and executed Node output. Not Codex desktop footage.                                                                                                      |
+| `submission/footage/simulated-no-viewer-failure.mp4`                          | **Incomplete supplemental take — NOT APPROVED**      | Capture was interrupted by a transient read reset. Excluded from the review; no-viewer and failure/restart behavior passed browser regressions.                                                                 |
+| `submission/footage/overlay-window.png`                                       | **Actual synchronized simulator overlay screenshot** | Separate spectator context, matching accepted count; unauthenticated control POST checked as 403.                                                                                                               |
+| `submission/footage/route-effect.png`, `win.png`, `failure.png`, `paused.png` | **Actual browser screenshots**                       | Visual QA; do not substitute generated imagery for functionality.                                                                                                                                               |
+| `submission/manual/live-route.mp4`                                            | **Required real Twitch — MISSING**                   | 43+ seconds: real command → count → natural resolution → route effect. Auth off camera.                                                                                                                         |
+| `submission/manual/live-gate.mp4`                                             | **Required real Twitch — MISSING**                   | 30+ seconds: actual participant preset, distinct accounts, goal and protective crossing.                                                                                                                        |
+| `submission/manual/codex-build.mp4`                                           | **Required genuine Codex — MISSING**                 | 20+ seconds: this real main build thread with actual edits/checks. No recreated sessions/IDs.                                                                                                                   |
+| `submission/manual/narration.wav`                                             | **Owner voiceover — MISSING**                        | Read `NARRATION.md`; no copyrighted music.                                                                                                                                                                      |
+| `submission/render/checkpoint-review-INCOMPLETE.mp4`                          | **Silent incomplete review**                         | Automated 160s cut, synthetic stand-ins in live slots, explicit missing-Codex card, persistent incomplete watermark. Claim rendered/validated only after `validation.json` exists.                              |
+
+| Final in–out | Length | Required final content                                                  |
+| ------------ | ------ | ----------------------------------------------------------------------- |
+| 0:00–0:12    | 12s    | Pitch over gameplay                                                     |
+| 0:12–0:55    | 43s    | Real Twitch command → acceptance → resolution → route consequence       |
+| 0:55–1:25    | 30s    | Real cooperative input and protective field                             |
+| 1:25–1:45    | 20s    | Explicitly simulated reliability; idle wait may be cut, not accelerated |
+| 1:45–2:10    | 25s    | Actual SDK usage and existing second integration                        |
+| 2:10–2:30    | 20s    | Genuine Codex build evidence                                            |
+| 2:30–2:40    | 10s    | Conclusion over actual win/gameplay                                     |
+
+`page@*.webm` / partial files from the stalled native recorder are **not approved sources**. The H.264 captures and report supersede that attempt. The separately saved native overlay take is supplemental simulator evidence only, not a final-edit dependency or proof of live Twitch.

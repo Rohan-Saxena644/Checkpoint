@@ -156,3 +156,14 @@ This is a **single local authoritative process**. Ordinary static hosting cannot
 No video, deployment, npm release, published repository, or hackathon submission is claimed. To obtain the real Codex session ID, type **`/status` in the main thread where most of this project was built**, as documented in the [hackathon resources](https://twitchcon-codex.devpost.com/resources). Do not substitute a generated ID.
 
 MIT licensed. Checkpoint focuses on explicit game-controlled participation windows; it does not claim to be the first Twitch SDK or voting system.
+
+## Final verification and recording packet
+
+The feature set is frozen. Follow [the timestamped recording checklist](docs/RECORDING_CHECKLIST.md), [narration](docs/NARRATION.md) and [clip manifest](docs/CLIP_MANIFEST.md). From the repository root, after npm run build, run:
+
+```powershell
+npm.cmd exec tsx -- scripts/submission/record.ts
+node scripts/submission/render.mjs
+```
+
+The capture script owns loopback port 4175, uses normal controls and natural deadlines, and records only labeled synthetic gameplay plus the actual development example. The renderer produces a **silent INCOMPLETE review**, never a final submission: real Twitch and genuine Codex desktop clips remain manual requirements. Files stay local under ignored submission/footage/ and submission/render/. Nothing is uploaded or published.

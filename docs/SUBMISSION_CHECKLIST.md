@@ -1,6 +1,6 @@
 # Submission checklist
 
-Reviewed against the official [overview](https://twitchcon-codex.devpost.com/), [rules](https://twitchcon-codex.devpost.com/rules), and [resources / FAQ](https://twitchcon-codex.devpost.com/resources) on **30 October 2026**. Recheck the official pages before submitting; this file is a working checklist, not legal advice or a submission receipt.
+Reviewed against the official [overview](https://twitchcon-codex.devpost.com/), [rules](https://twitchcon-codex.devpost.com/rules), and [resources / FAQ](https://twitchcon-codex.devpost.com/resources) on **31 October 2026**. Recheck the official pages before submitting; this file is a working checklist, not legal advice or a submission receipt.
 
 ## Project readiness
 
@@ -38,3 +38,7 @@ The official rules list **2 November 2026, 2:00 PM Pacific** as the submission d
 - [ ] Submit the completed Devpost form before the official deadline and retain the actual confirmation.
 
 Nothing in this checklist claims a completed deployment, publication, live test, recording or submission.
+
+## Final recording phase
+
+Official overview/resources/rules were rechecked on 31 October 2026. The 160-second storyboard, narration and clip manifest are in RECORDING_CHECKLIST.md, NARRATION.md and CLIP_MANIFEST.md. A simulator review does not satisfy the missing real Twitch or genuine Codex footage. Final playback inspection and a real /status ID remain owner actions. No publication or upload was performed.

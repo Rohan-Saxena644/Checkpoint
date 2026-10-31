@@ -6,9 +6,9 @@ Build and verification completed across 30–31 October 2026, Node 22.16 on Wind
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | TypeScript strict type check                                                                  | Passed                                                              |
 | ESLint                                                                                        | Passed                                                              |
-| Vitest core, synthetic Twitch, game authority and controller security                         | **44 tests passed across 5 files**                                  |
+| Vitest core, synthetic Twitch, game authority and controller security                         | **45 tests passed across 5 files**                                  |
 | Production packages, browser bundle and Node build                                            | Passed                                                              |
-| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **4 tests passed in 2.1 minutes after the 0.2.0 refactor**          |
+| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **All 5 scenarios passed across the final run and focused retry**   |
 | Independent console signal-panel integration                                                  | Passed: two generic participants, cyan result, one applied effect   |
 | Desktop, mobile and OBS overlay screenshots                                                   | Captured and visually inspected; screenshots in `docs/screenshots/` |
 | Live OAuth and real single-channel Twitch commands                                            | **Pending. No credentials configured or used.**                     |
@@ -34,3 +34,9 @@ The documented production start was also exercised: `/play`, `/overlay`, `/dev`,
 ## Live test to perform
 
 Configure a registered app, authorize the broadcaster explicitly, choose Twitch mode and a tiny preset, reach each checkpoint, send real commands from one/two consenting accounts, and verify actual game changes and the OBS overlay. Confirm duplicate user voting policy, connection loss pause/resume, cancellation fallback and token revocation. Record only a minimal dated result here; never commit real chat transcripts, account IDs, app secrets or tokens.
+
+## Final submission phase
+
+Feature scope was frozen. Restart now hides the prior run's window/command; region fragment progress, preserved pause time and existing bounded effects have clearer feedback. Type checking, lint, 45 unit/security tests and production build passed. Four browser cases passed in the final full run; the crew case encountered a transient ECONNRESET during read-only state polling, then passed its focused rerun after adding bounded read retries. Overlay synchronization/read-only checks and failure/restart coverage passed. No game-control mutation is automatically retried.
+
+The finalized synthetic gameplay, reliability and actual SDK clips are local under submission/footage/. The optional no-viewer/failure recording was interrupted and is not approved footage; those behaviors passed browser regressions. The local review renderer creates a 160-second INCOMPLETE MP4, not a submission-ready video: genuine Twitch footage, genuine Codex desktop evidence and recorded narration remain missing. See FINAL_VERIFICATION.md and RECORDING_CHECKLIST.md. Nothing was uploaded.
