@@ -6,14 +6,22 @@ Build and verification completed across 30–31 October 2026, Node 22.16 on Wind
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | TypeScript strict type check                                                                  | Passed                                                              |
 | ESLint                                                                                        | Passed                                                              |
-| Vitest core, synthetic Twitch, game authority and controller security                         | **40 tests passed across 4 files**                                  |
+| Vitest core, synthetic Twitch, game authority and controller security                         | **44 tests passed across 5 files**                                  |
 | Production packages, browser bundle and Node build                                            | Passed                                                              |
-| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **4 tests passed in 2.6 minutes**                                   |
-| Independent console signal-panel integration                                                  | Passed: choice changed the signal to cyan                           |
+| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **4 tests passed in 2.1 minutes after the 0.2.0 refactor**          |
+| Independent console signal-panel integration                                                  | Passed: two generic participants, cyan result, one applied effect   |
 | Desktop, mobile and OBS overlay screenshots                                                   | Captured and visually inspected; screenshots in `docs/screenshots/` |
 | Live OAuth and real single-channel Twitch commands                                            | **Pending. No credentials configured or used.**                     |
 | Standard-mode 3–5-minute play balance                                                         | Design target; no user playtest or timing study claimed             |
 | Public deployment, video, npm release, repository publication and submission                  | Not performed                                                       |
+
+## Library reusability verification · 0.2.0
+
+- `npm run test:core:offline`: **20 core tests passed** with Twitch/secret-related environment variables removed and a preload that denies Node networking calls. This imports no Twitch adapter, server, React or game code.
+- `npm run verify:package`: packed `@checkpoint/core` **0.2.0**, checked the exact six-file contents (`package.json`, built JS/declarations, README, changelog, MIT license), installed it with offline npm into a temporary consumer **outside the monorepo**, and compiled the existing signal-panel example using a fresh TypeScript config with **no paths aliases or ambient Node types**.
+- The external Node consumer ran with networking denied and no inherited credentials: **2 participants, cyan outcome, 1 effect** despite repeated application. Package-root import worked; `@checkpoint/core/src/index.js` was rejected with `ERR_PACKAGE_PATH_NOT_EXPORTED`. The archive has **zero runtime dependencies** and no credentials, source tests, or showcase assets.
+- `TwitchAdapter` and `SimulatorAdapter` both implement `InputAdapter`. Synthetic transport tests assert actual `Interaction` state. The game's acceptance path delegates to `Interaction.accept` and maintains no second voting tally. Command parsing lives outside core in the showcase normalizer shared by the two adapters.
+- Package READMEs, MIT license copies, changelogs and contributor guidance are included. The API remains experimental. Dependency-license metadata and installed runtime notices were generated from the lockfile, with original asset provenance in `LICENSING.md`.
 
 Automated Twitch tests deliberately use mocked token endpoints and synthetic EventSub frames. They check subscription version and account conditions, command delivery, stale/duplicate handling, shared-channel exclusion, planned handover without duplicate subscription, cold reconnect, revocation, keepalive timeout and hourly validation. They do not test Twitch's real servers or account-specific authorization.
 
