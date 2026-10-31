@@ -1,6 +1,12 @@
 import WebSocket from "ws";
 import { z } from "zod";
-import { BoundedSet } from "@checkpoint/core";
+import {
+  BoundedSet,
+  type AdapterHost,
+  type InputAdapter,
+  type Input,
+  type WindowState,
+} from "@checkpoint/core";
 export type ChatMessage = {
   deliveryId: string;
   userId: string;
@@ -63,7 +69,8 @@ const envelope = z.object({
 });
 
 /** Installed, single-broadcaster EventSub client. No message sending or token persistence. */
-export class TwitchAdapter {
+export class TwitchAdapter implements InputAdapter {
+  private host?: AdapterHost;
   private tokens?: z.infer<typeof tokenSchema>;
   private identity?: z.infer<typeof validationSchema>;
   private expiresAt = 0;
@@ -79,12 +86,18 @@ export class TwitchAdapter {
   private seen = new BoundedSet(4096);
   constructor(
     private config: TwitchConfig,
-    private onChat: (input: ChatMessage) => void,
+    private normalize: (
+      message: ChatMessage,
+      window: WindowState,
+    ) => Input | undefined,
     private onStatus: (status: ConnectionStatus) => void,
     private request: typeof fetch = fetch,
     private createSocket: (url: string) => WebSocket = (url) =>
       new WebSocket(url, { maxPayload: 65536, handshakeTimeout: 10000 }),
   ) {}
+  start(host: AdapterHost) {
+    this.host = host;
+  }
   authorizationUrl(state: string) {
     const url = new URL("https://id.twitch.tv/oauth2/authorize");
     url.search = new URLSearchParams({
@@ -119,7 +132,9 @@ export class TwitchAdapter {
     this.expiresAt = Date.now() + tokens.expires_in * 1000;
   }
   async authorize(code: string) {
-    this.stop();
+    if (!this.host)
+      throw new Error("Attach an adapter host before authorizing");
+    this.reset();
     const generation = this.generation;
     await this.exchange({
       grant_type: "authorization_code",
@@ -208,7 +223,7 @@ export class TwitchAdapter {
     return timer;
   }
   private revoke() {
-    this.stop();
+    this.reset();
     this.onStatus("authorization-required");
   }
   private reconnect() {
@@ -311,13 +326,19 @@ export class TwitchAdapter {
         )
           return;
         this.seen.add(meta.message_id);
-        if (event.message.text.startsWith("!"))
-          this.onChat({
-            deliveryId: meta.message_id,
-            userId: event.chatter_user_id,
-            text: event.message.text,
-            sentAt,
-          });
+        const window = this.host?.currentWindow();
+        if (window) {
+          const input = this.normalize(
+            {
+              deliveryId: meta.message_id,
+              userId: event.chatter_user_id,
+              text: event.message.text,
+              sentAt,
+            },
+            window,
+          );
+          if (input) this.host?.accept(input);
+        }
       })().catch(() => {
         if (!this.stopped && generation === this.generation) ws.terminate();
       });
@@ -410,6 +431,10 @@ export class TwitchAdapter {
     }
   }
   stop() {
+    this.reset();
+    this.host = undefined;
+  }
+  private reset() {
     this.stopped = true;
     this.generation++;
     this.refreshInFlight = undefined;

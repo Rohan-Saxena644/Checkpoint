@@ -17,6 +17,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:core:offline": "node scripts/test-core-offline.mjs",
+    "build:packages": "npm run build -w @checkpoint/core && npm run build -w @checkpoint/twitch",
+    "verify:package": "npm run build -w @checkpoint/core && node scripts/verify-package.mjs",
+    "licenses": "node scripts/licenses.mjs",
     "test:e2e": "playwright test",
     "example": "tsx examples/signal-panel.ts"
   },

@@ -8,12 +8,17 @@ export default ts.config(
       "**/dist-server/**",
       "node_modules/**",
       ".npm-cache/**",
+      ".local/**",
       "test-results/**",
       "playwright-report/**",
     ],
   },
   js.configs.recommended,
   ...ts.configs.recommended,
+  {
+    files: ["scripts/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   {
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {

@@ -70,44 +70,73 @@ The adapter implements OAuth authorization-code exchange, `user:read:chat` only,
 
 ## Use the SDK
 
-`packages/core` has no Twitch, Node, browser, or rendering dependencies. Build outputs include JavaScript and declarations. Both packages are private local workspaces; nothing is published to npm.
+**Experimental API, version 0.2.0.** Start with the [standalone core package guide](packages/core/README.md), [adapter contract](packages/core/README.md#minimal-adapter-interface), and [migration notes](packages/core/CHANGELOG.md). The core has zero runtime dependencies and no Twitch, Node, React, server or game imports. Definitions contain generic actions; chat grammar belongs to the showcase adapters. Browser compatibility does not make client-side votes trustworthy: real shared decisions belong in a trusted host.
+
+This copyable two-participant example uses only public package exports and applies a repeated outcome once. It is also the existing console signal panel, not a new application.
 
 ```ts
-import { Interaction, parseCommand, BoundedSet } from "@checkpoint/core";
+import { BoundedSet, Interaction, type Outcome } from "@checkpoint/core";
 
-const windows = new Interaction(); // inject () => number for deterministic tests
+// No Twitch, server, game, React, network, or credentials. Use only public exports.
+let now = 1000;
+const windows = new Interaction(() => now);
 const applied = new BoundedSet(128);
-windows.subscribe((event) => {
-  if (event.type !== "resolved" || !event.state.outcome) return;
-  const outcome = event.state.outcome;
-  if (applied.has(outcome.id)) return;
-  applied.add(outcome.id);
-  setRoute(outcome.value); // your own game effect
-});
+let signal = "amber";
+let effectCount = 0;
 const window = windows.open(
-  crypto.randomUUID(),
+  "signal-001",
   {
     kind: "choice",
-    command: "!route",
-    options: ["left", "right"],
-    fallback: "right",
+    options: ["amber", "cyan"],
+    fallback: "amber",
   },
-  18000,
+  10000,
 );
-const value = parseCommand("!route left", window.definition);
-if (value !== undefined)
-  windows.accept({
-    windowId: window.id,
-    deliveryId: "transport-event-123",
-    userId: "stable-viewer-id",
-    value,
-    sentAt: Date.now(),
-  });
-// Call windows.tick() from your authoritative process loop.
-// windows.pause(); windows.resume(); windows.resolve(); windows.cancel();
+
+function apply(outcome: Outcome) {
+  if (outcome.windowId !== window.id || applied.has(outcome.id)) return false;
+  applied.add(outcome.id);
+  signal = outcome.value;
+  effectCount++;
+  return true;
+}
+windows.accept({
+  windowId: window.id,
+  participantId: "participant-a",
+  inputId: "input-a",
+  action: "cyan",
+  sentAt: now,
+});
+windows.accept({
+  windowId: window.id,
+  participantId: "participant-b",
+  inputId: "input-b",
+  action: "cyan",
+  sentAt: now,
+});
+now += 10000;
+windows.tick(); // the host normally calls this from its own authoritative loop
+const outcome = windows.resolve()!; // returns the existing result after tick
+apply(outcome);
+apply(outcome); // repeated delivery has no second effect
+if (signal !== "cyan" || effectCount !== 1)
+  throw new Error("Unexpected signal result");
+console.log(
+  `Signal: ${signal}; participants: ${outcome.participants}; effects applied: ${effectCount}`,
+);
 ```
 
-`setRoute` above belongs to the integrating game. For cooperative goals, use `{ kind: 'goal', command: '!charge', target: 2, fallback: 'unprotected' }` and normalized value `'charge'`. See the [architecture and guarantees](docs/ARCHITECTURE.md) for timing and lifecycle contracts.
+Run it with `npm run example`. For goals, define `{ kind: 'goal', action: 'contribute', target: 2, success: 'ready', fallback: 'not-ready' }`. Actions and effects are application-defined. The SDK handles participation rules, validation, timing, deterministic resolution and bounded deduplication. The host handles authorization/eligibility, trusted clocks, transport health, rate limits, effects and any persistence. Use a simple poll if you only need a displayed tally.
+
+Verify independent reuse without registry access after dependencies are installed:
+
+```sh
+npm run test:core:offline
+npm run build:packages
+npm run verify:package
+```
+
+The verifier packs `@checkpoint/core`, enforces an exact six-file allowlist, installs the archive into a temporary consumer outside the monorepo, compiles this same example against exported declarations, and executes it with networking denied. The core archive contains only ESM JavaScript, declarations, README, changelog, license and package metadata. No credentials or showcase assets are included. Nothing is published to npm. See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [licensing](docs/LICENSING.md), and [architecture](docs/ARCHITECTURE.md).
 
 ## Security and data
 

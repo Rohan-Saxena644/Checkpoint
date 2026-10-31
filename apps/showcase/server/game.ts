@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import {
   BoundedSet,
   Interaction,
-  parseCommand,
+  type Input,
+  type InputResult,
   type Outcome,
 } from "@checkpoint/core";
 export type Mode = "simulator" | "twitch";
@@ -46,6 +47,7 @@ export class Expedition {
   offlineContinuation = false;
   paused = false;
   transportStatus = "simulator-ready";
+  windowCommand = "!route";
   private keys = { x: 0, y: 0 };
   private keyExpires = 0;
   private applied = new BoundedSet(128);
@@ -236,25 +238,26 @@ export class Expedition {
       }
       r.status = "checkpoint";
       const id = `${r.id}:${r.stage}:${randomUUID()}`;
+      this.windowCommand =
+        r.stage === 0 ? "!route" : r.stage === 1 ? "!supply" : "!charge";
       this.interaction.open(
         id,
         r.stage === 0
           ? {
               kind: "choice",
-              command: "!route",
               options: ["left", "right"],
               fallback: "right",
             }
           : r.stage === 1
             ? {
                 kind: "choice",
-                command: "!supply",
                 options: ["shield", "heal", "boost"],
                 fallback: "heal",
               }
             : {
                 kind: "goal",
-                command: "!charge",
+                action: "charge",
+                success: "protected",
                 target: r.crew,
                 fallback: "unprotected",
               },
@@ -266,28 +269,9 @@ export class Expedition {
       }
     }
   }
-  input(
-    text: string,
-    userId: string,
-    deliveryId: string = randomUUID(),
-    sentAt = this.clock(),
-    windowId = this.interaction.snapshot()?.id ?? "",
-  ) {
-    if (!this.connected) return { accepted: false, reason: "disconnected" };
-    const state = this.interaction.snapshot();
-    if (!state) return { accepted: false, reason: "closed" };
-    const value = parseCommand(text, state.definition);
-    if (value === undefined) {
-      this.log("input", "invalid-command");
-      return { accepted: false, reason: "invalid-command" };
-    }
-    return this.interaction.accept({
-      windowId,
-      userId,
-      deliveryId,
-      sentAt,
-      value,
-    });
+  accept(input: Input): InputResult {
+    if (!this.connected) return { accepted: false, reason: "paused" };
+    return this.interaction.accept(input);
   }
   applyOutcome(outcome: Outcome) {
     const state = this.interaction.snapshot(),
@@ -343,9 +327,10 @@ export class Expedition {
     );
   }
   snapshot() {
+    const window = this.interaction.snapshot();
     return {
       run: structuredClone(this.run),
-      window: this.interaction.snapshot(),
+      window: window ? { ...window, command: this.windowCommand } : undefined,
       mode: this.mode,
       connected: this.connected,
       offlineContinuation: this.offlineContinuation,

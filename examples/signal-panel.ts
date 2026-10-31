@@ -1,34 +1,49 @@
-import { Interaction } from "@checkpoint/core";
-// A second integration with no game, Twitch, DOM, or renderer dependencies.
-let clock = 1000;
-const crew = new Interaction(() => clock);
+import { BoundedSet, Interaction, type Outcome } from "@checkpoint/core";
+
+// No Twitch, server, game, React, network, or credentials. Use only public exports.
+let now = 1000;
+const windows = new Interaction(() => now);
+const applied = new BoundedSet(128);
 let signal = "amber";
-const applied = new Set<string>(); // this short-lived example opens only one window
-crew.subscribe((event) => {
-  if (event.type !== "resolved" || !event.state.outcome) return;
-  const outcome = event.state.outcome;
-  if (applied.has(outcome.id)) return;
-  applied.add(outcome.id);
-  signal = outcome.value;
-  console.log(`Signal changed to ${signal}; outcome ${outcome.id}`);
-});
-crew.open(
+let effectCount = 0;
+const window = windows.open(
   "signal-001",
   {
     kind: "choice",
-    command: "!signal",
     options: ["amber", "cyan"],
     fallback: "amber",
   },
   10000,
 );
-crew.accept({
-  windowId: "signal-001",
-  deliveryId: "synthetic-delivery",
-  userId: "synthetic-viewer",
-  value: "cyan",
-  sentAt: clock,
+
+function apply(outcome: Outcome) {
+  if (outcome.windowId !== window.id || applied.has(outcome.id)) return false;
+  applied.add(outcome.id);
+  signal = outcome.value;
+  effectCount++;
+  return true;
+}
+windows.accept({
+  windowId: window.id,
+  participantId: "participant-a",
+  inputId: "input-a",
+  action: "cyan",
+  sentAt: now,
 });
-clock += 10000;
-crew.tick();
-console.log(`Final signal: ${signal}`);
+windows.accept({
+  windowId: window.id,
+  participantId: "participant-b",
+  inputId: "input-b",
+  action: "cyan",
+  sentAt: now,
+});
+now += 10000;
+windows.tick(); // the host normally calls this from its own authoritative loop
+const outcome = windows.resolve()!; // returns the existing result after tick
+apply(outcome);
+apply(outcome); // repeated delivery has no second effect
+if (signal !== "cyan" || effectCount !== 1)
+  throw new Error("Unexpected signal result");
+console.log(
+  `Signal: ${signal}; participants: ${outcome.participants}; effects applied: ${effectCount}`,
+);

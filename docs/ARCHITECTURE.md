@@ -1,24 +1,21 @@
 # Architecture and contracts
 
 ```text
-Twitch chat → EventSub WebSocket → @checkpoint/twitch
-                                            ↓ normalized chat event
-Synthetic viewer buttons → authenticated server → parseCommand
-                                            ↓ window ID + stable user ID + delivery ID
-                              @checkpoint/core Interaction
-                                            ↓ typed outcome (one per window)
-                              authoritative Expedition game
-                                            ↓ read-only snapshots
-                              /play Canvas · /overlay · /dev
+Twitch EventSub -> TwitchAdapter -----+
+                                     | InputAdapter / AdapterHost
+Synthetic buttons -> SimulatorAdapter+-> Expedition.accept(Input)
+                                         -> @checkpoint/core Interaction
+                                         -> typed outcome -> game effect
+                                         -> read-only /play /overlay /dev
 ```
 
-`packages/core`: pure choice/goal state machines, definitions, typed lifecycle events, deterministic resolution, command parsing, FIFO bounded sets. `packages/twitch`: Node OAuth/EventSub transport; no game dependency. `apps/showcase/server`: Express, protected controller, game simulation, 30 Hz authoritative update / 10 Hz public snapshots. `apps/showcase/src`: React and Canvas presentation. Browser animation only draws the server state; the browser does not own votes, health, movement effects, or deadlines.
+`packages/core`: pure choice/goal state machines, definitions, typed lifecycle events, deterministic resolution, generic normalized actions, the adapter contract, and FIFO bounded sets. It has zero runtime dependencies and no command grammar. `packages/twitch`: Node OAuth/EventSub transport; no game dependency. `apps/showcase/server`: Express, protected controller, game simulation, 30 Hz authoritative update / 10 Hz public snapshots. `apps/showcase/src`: React and Canvas presentation. Browser animation only draws the server state; the browser does not own votes, health, movement effects, or deadlines.
 
 ## Lifecycle
 
 Define a choice or goal → `open(uniqueId, definition, durationMs)` → `accept(input)` → `tick()` / `resolve()` → resolved. From open: pause/resume or cancel. A cancelled window never produces an outcome. Opening another window while one is active throws. Subscribe to the discriminated `LifecycleEvent` union for opened, input, paused, resumed, resolved and cancelled events. Unsubscribe using the returned function. Snapshots and outcomes are cloned so consumer mutation cannot change internal state.
 
-Choice policy: a later **valid** vote replaces the same user's previous vote in the same window; invalid commands do not erase a vote. Ties use the order of `options` in the definition. Zero votes use `fallback` explicitly. Goal policy: each distinct eligible user contributes exactly one unit at most once per window, even if their delivery cache entry has been evicted. Threshold success returns `protected`; failure, including no contributions, returns `unprotected`. Eligibility in the demo means a valid command from a user in the authorized channel during an open window. Shared-chat messages sourced from a different broadcaster are discarded.
+Choice policy: a later **valid** vote replaces the same user's previous vote in the same window; invalid commands do not erase a vote. Ties use the order of `options` in the definition. Zero votes use `fallback` explicitly. Goal policy: each distinct eligible user contributes exactly one unit at most once per window, even if their delivery cache entry has been evicted. Goals return their host-defined `success` or `fallback`; The Last Beacon chooses `protected` / `unprotected`. Eligibility in the demo means a valid command from a user in the authorized channel during an open window. Shared-chat messages sourced from a different broadcaster are discarded.
 
 ## Time and recovery policy
 
@@ -37,3 +34,9 @@ Pause captures remaining time and rejects all participation. Resume sets a fresh
 ## Reusing the packages
 
 `npm run build -w @checkpoint/core` emits `packages/core/dist/index.js` and `.d.ts`; the Twitch package builds after core. Workspace `exports` expose both typed public APIs. The browser-only `/example` and `examples/signal-panel.ts` demonstrate a second integration without importing the Expedition class. No package publishing is necessary.
+
+## Adapter and package boundaries
+
+Both TwitchAdapter and SimulatorAdapter implement the public core InputAdapter interface: start(host), stop(). AdapterHost exposes currentWindow() and accept(Input). The showcase command normalizer lives in apps/showcase/server/commands.ts and is passed to both adapters. Game code delegates acceptance to Interaction.accept; it has no separate voting, deduplication, or tally implementation. Twitch payload fields exist only at the Twitch boundary and become source-qualified participantId/inputId plus an allowed action and trusted timestamp. Chat command labels in public game snapshots are presentation data, not core definitions.
+
+See [the core package README](../packages/core/README.md) for Node/browser support, host responsibilities, timing limits and the copyable first-use example. A browser can execute the ESM state machine but is not an authority for real votes. The local archive verifier exercises installed built exports without repository source aliases; distribution excludes all source tests, credentials and game assets. The API is experimental, with breaking changes documented in [CHANGELOG](../CHANGELOG.md).

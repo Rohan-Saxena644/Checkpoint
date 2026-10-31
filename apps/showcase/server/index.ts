@@ -12,6 +12,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { TwitchAdapter } from "@checkpoint/twitch";
 import { Expedition } from "./game.js";
+import { normalizeCommand } from "./commands.js";
+import { SimulatorAdapter } from "./simulator.js";
+import type { AdapterHost } from "@checkpoint/core";
 
 export async function createCheckpointServer(
   options: { production?: boolean; origin?: string; port?: number } = {},
@@ -19,6 +22,14 @@ export async function createCheckpointServer(
   const app = express(),
     server = createServer(app),
     game = new Expedition();
+  const host: AdapterHost = {
+    currentWindow: () => game.interaction.snapshot(),
+    accept: (input) => game.accept(input),
+  };
+  const simulator = new SimulatorAdapter((message, window) =>
+    normalizeCommand(message, window, game.windowCommand),
+  );
+  simulator.start(host);
   const origin =
     options.origin ?? process.env.PUBLIC_ORIGIN ?? "http://localhost:4173";
   const publicUrl = new URL(origin);
@@ -162,8 +173,9 @@ export async function createCheckpointServer(
       }
       if (c.mode === "simulator") {
         adapter?.stop();
+        simulator.start(host);
         game.setTransport(true, "simulator-ready");
-      }
+      } else simulator.stop();
       game.start(c.easy, c.crew, c.mode);
     } else if (c.type === "move") {
       const session = cookie(req);
@@ -197,11 +209,13 @@ export async function createCheckpointServer(
           .json({ error: "Synthetic input is disabled in Twitch mode" });
         return;
       }
-      if (c.type === "sim-disconnect")
+      if (c.type === "sim-disconnect") {
+        simulator.stop();
         game.setTransport(false, "simulator-disconnected");
-      else if (c.type === "sim-resume")
+      } else if (c.type === "sim-resume") {
+        simulator.start(host);
         game.setTransport(true, "simulator-ready");
-      else if (c.type === "duplicate-outcome") {
+      } else if (c.type === "duplicate-outcome") {
         const outcome = game.interaction.snapshot()?.outcome;
         if (outcome) {
           game.applyOutcome(outcome);
@@ -212,13 +226,14 @@ export async function createCheckpointServer(
           c.scenario === "duplicate"
             ? "sim-duplicate-delivery"
             : randomBytes(12).toString("hex");
-        const result = game.input(
-          c.text,
-          `sim:${c.user}`,
-          id,
-          Date.now() - (c.scenario === "stale" ? 30000 : 0),
-          c.scenario === "old-window" ? "retired-window" : undefined,
-        );
+        const result = simulator.send({
+          text: c.text,
+          participantId: `sim:${c.user}`,
+          inputId: `sim:${id}`,
+          sentAt: Date.now() - (c.scenario === "stale" ? 30000 : 0),
+          windowId: c.scenario === "old-window" ? "retired-window" : undefined,
+        });
+        if (result.reason === "invalid") game.log("input", "invalid-command");
         res.json({ ok: true, result });
         return;
       }
@@ -249,12 +264,22 @@ export async function createCheckpointServer(
         redirectUri:
           process.env.TWITCH_REDIRECT_URI ?? `${origin}/auth/twitch/callback`,
       },
-      (chat) => {
-        if (game.mode === "twitch")
-          game.input(chat.text, chat.userId, chat.deliveryId, chat.sentAt);
-      },
+      (chat, window) =>
+        game.mode === "twitch"
+          ? normalizeCommand(
+              {
+                text: chat.text,
+                participantId: `twitch:${chat.userId}`,
+                inputId: `twitch:${chat.deliveryId}`,
+                sentAt: chat.sentAt,
+              },
+              window,
+              game.windowCommand,
+            )
+          : undefined,
       (status) => game.setTransport(status === "connected", status),
     );
+    adapter.start(host);
     const state = randomBytes(24).toString("hex");
     if (oauthStates.size >= 8)
       oauthStates.delete(oauthStates.keys().next().value!);
@@ -369,6 +394,7 @@ export async function createCheckpointServer(
       clearInterval(tick);
       clearInterval(broadcast);
       adapter?.stop();
+      simulator.stop();
       for (const ws of wss.clients) ws.terminate();
       wss.close();
       await vite?.close();

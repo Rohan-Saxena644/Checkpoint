@@ -1,6 +1,6 @@
 {
   "name": "@checkpoint/twitch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -12,11 +12,25 @@
     }
   },
   "dependencies": {
-    "@checkpoint/core": "*",
+    "@checkpoint/core": "^0.2.0",
     "ws": "^8.18.3",
     "zod": "^4.1.12"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
-  }
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build"
+  },
+  "license": "MIT",
+  "description": "Experimental Twitch EventSub input adapter for Checkpoint.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false
 }

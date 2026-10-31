@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  BoundedSet,
-  Interaction,
-  parseCommand,
-  type Choice,
-  type Input,
-} from "./index.js";
+import { BoundedSet, Interaction, type Choice, type Input } from "./index.js";
 const choice: Choice = {
   kind: "choice",
-  command: "!route",
   options: ["left", "right"],
   fallback: "right",
 };
@@ -19,9 +12,9 @@ function fixture(capacity = 10, cache = 4) {
   const send = (overrides: Partial<Input> = {}) =>
     engine.accept({
       windowId: "one",
-      userId: "ada",
-      deliveryId: crypto.randomUUID(),
-      value: "left",
+      participantId: "ada",
+      inputId: crypto.randomUUID(),
+      action: "left",
       sentAt: now,
       ...overrides,
     });
@@ -34,10 +27,86 @@ function fixture(capacity = 10, cache = 4) {
   };
 }
 describe("interaction lifecycle", () => {
+  it("accepts opaque generic actions and participant IDs without command syntax", () => {
+    const engine = new Interaction(() => 1000);
+    engine.open(
+      "local-window",
+      {
+        kind: "choice",
+        options: ["north exit", "南门", "__proto__", "constructor"],
+        fallback: "north exit",
+      },
+      1000,
+    );
+    engine.accept({
+      windowId: "local-window",
+      participantId: "local person",
+      inputId: "button-1",
+      action: "__proto__",
+      sentAt: 1000,
+    });
+    engine.accept({
+      windowId: "local-window",
+      participantId: "another person",
+      inputId: "button-2",
+      action: "__proto__",
+      sentAt: 1000,
+    });
+    expect(engine.snapshot()?.counts.__proto__).toBe(2);
+    expect(engine.resolve()?.value).toBe("__proto__");
+  });
+  it("resolves a goal using only host-defined actions and result values", () => {
+    const engine = new Interaction(() => 1);
+    engine.open(
+      "cooperate",
+      {
+        kind: "goal",
+        action: "lend a hand",
+        target: 1,
+        success: "door unlocked",
+        fallback: "use key",
+      },
+      1000,
+    );
+    expect(
+      engine.accept({
+        windowId: "cooperate",
+        participantId: "person-a",
+        inputId: "click-a",
+        action: "lend a hand",
+        sentAt: 1,
+      }).accepted,
+    ).toBe(true);
+    expect(engine.resolve()?.value).toBe("door unlocked");
+  });
+  it("rejects empty actions, invalid capacities and ambiguous goal results", () => {
+    expect(() => new Interaction(Date.now, 0)).toThrow();
+    const engine = new Interaction();
+    expect(() =>
+      engine.open(
+        "empty",
+        { kind: "choice", options: [" ", "yes"], fallback: "yes" },
+        100,
+      ),
+    ).toThrow();
+    expect(() =>
+      engine.open(
+        "ambiguous",
+        {
+          kind: "goal",
+          action: "help",
+          target: 1,
+          success: "same",
+          fallback: "same",
+        },
+        100,
+      ),
+    ).toThrow();
+  });
   it("replaces the same user vote while keeping one effective vote", () => {
     const f = fixture();
     f.send();
-    expect(f.send({ value: "right" }).reason).toBe("replaced");
+    expect(f.send({ action: "right" }).reason).toBe("replaced");
     expect(f.engine.snapshot()).toMatchObject({
       participants: 1,
       counts: { left: 0, right: 1 },
@@ -45,16 +114,16 @@ describe("interaction lifecycle", () => {
   });
   it("suppresses transport delivery IDs independently of viewer identity", () => {
     const f = fixture();
-    f.send({ deliveryId: "same" });
-    expect(f.send({ deliveryId: "same", userId: "other" }).reason).toBe(
+    f.send({ inputId: "same" });
+    expect(f.send({ inputId: "same", participantId: "other" }).reason).toBe(
       "duplicate",
     );
     expect(f.engine.snapshot()?.participants).toBe(1);
   });
   it("breaks ties using definition option order", () => {
     const f = fixture();
-    f.send({ value: "right" });
-    f.send({ userId: "moss" });
+    f.send({ action: "right" });
+    f.send({ participantId: "moss" });
     expect(f.engine.resolve()?.value).toBe("left");
   });
   it("uses explicit no-vote fallback", () => {
@@ -66,8 +135,8 @@ describe("interaction lifecycle", () => {
   });
   it("rejects invalid, malformed, future and old inputs", () => {
     const f = fixture();
-    expect(f.send({ value: "up" }).reason).toBe("invalid");
-    expect(f.send({ userId: "" }).reason).toBe("invalid");
+    expect(f.send({ action: "up" }).reason).toBe("invalid");
+    expect(f.send({ participantId: "" }).reason).toBe("invalid");
     expect(f.send({ sentAt: NaN }).reason).toBe("invalid");
     expect(f.send({ sentAt: 999 }).reason).toBe("stale");
     expect(f.send({ sentAt: 5000 }).reason).toBe("stale");
@@ -124,14 +193,20 @@ describe("interaction lifecycle", () => {
     f.engine.cancel();
     f.engine.open(
       "goal",
-      { kind: "goal", command: "!charge", target: 2, fallback: "unprotected" },
+      {
+        kind: "goal",
+        action: "charge",
+        success: "protected",
+        target: 2,
+        fallback: "unprotected",
+      },
       10000,
     );
-    expect(f.send({ windowId: "goal", value: "charge" }).accepted).toBe(true);
-    expect(f.send({ windowId: "goal", value: "charge" }).reason).toBe(
+    expect(f.send({ windowId: "goal", action: "charge" }).accepted).toBe(true);
+    expect(f.send({ windowId: "goal", action: "charge" }).reason).toBe(
       "already-contributed",
     );
-    f.send({ windowId: "goal", value: "charge", userId: "moss" });
+    f.send({ windowId: "goal", action: "charge", participantId: "moss" });
     expect(f.engine.resolve()).toMatchObject({
       value: "protected",
       participants: 2,
@@ -142,7 +217,13 @@ describe("interaction lifecycle", () => {
     const e = new Interaction();
     e.open(
       "goal",
-      { kind: "goal", command: "!charge", target: 2, fallback: "unprotected" },
+      {
+        kind: "goal",
+        action: "charge",
+        success: "protected",
+        target: 2,
+        fallback: "unprotected",
+      },
       1000,
     );
     expect(e.resolve()).toMatchObject({ value: "unprotected", fallback: true });
@@ -150,8 +231,8 @@ describe("interaction lifecycle", () => {
   it("bounds participant storage and cache entries", () => {
     const f = fixture(2);
     f.send();
-    f.send({ userId: "moss" });
-    expect(f.send({ userId: "nova" }).reason).toBe("capacity");
+    f.send({ participantId: "moss" });
+    expect(f.send({ participantId: "nova" }).reason).toBe("capacity");
     const set = new BoundedSet(2);
     set.add("a");
     set.add("b");
@@ -164,18 +245,24 @@ describe("interaction lifecycle", () => {
     const e = new Interaction(() => 1, 100, 1);
     e.open(
       "g",
-      { kind: "goal", command: "!charge", target: 3, fallback: "unprotected" },
+      {
+        kind: "goal",
+        action: "charge",
+        success: "protected",
+        target: 3,
+        fallback: "unprotected",
+      },
       1000,
     );
     const input = {
       windowId: "g",
-      userId: "a",
-      deliveryId: "a",
-      value: "charge",
+      participantId: "a",
+      inputId: "a",
+      action: "charge",
       sentAt: 1,
     };
     e.accept(input);
-    e.accept({ ...input, userId: "b", deliveryId: "b" });
+    e.accept({ ...input, participantId: "b", inputId: "b" });
     expect(e.accept(input).reason).toBe("already-contributed");
   });
   it("emits one resolution event and supports unsubscribe", () => {
@@ -203,22 +290,8 @@ describe("interaction lifecycle", () => {
     const f = fixture();
     const snapshot = f.engine.snapshot()!;
     snapshot.counts.left = 50;
-    snapshot.definition.command = "!no";
-    expect(f.engine.snapshot()?.counts.left).toBeUndefined();
-    expect(f.engine.snapshot()?.definition.command).toBe("!route");
-  });
-  it("parses exact commands and rejects unrelated or extra arguments", () => {
-    expect(parseCommand("!ROUTE right", choice)).toBe("right");
-    expect(parseCommand("!route left now", choice)).toBeUndefined();
-    expect(parseCommand("!supply shield", choice)).toBeUndefined();
-    expect(parseCommand("!route up", choice)).toBeUndefined();
-    expect(
-      parseCommand("!charge x", {
-        kind: "goal",
-        command: "!charge",
-        target: 1,
-        fallback: "unprotected",
-      }),
-    ).toBeUndefined();
+    snapshot.definition.kind = "goal";
+    expect(f.engine.snapshot()?.counts.left).toBe(0);
+    expect(f.engine.snapshot()?.definition.kind).toBe("choice");
   });
 });

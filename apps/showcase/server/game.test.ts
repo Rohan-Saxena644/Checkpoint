@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { Expedition } from "./game.js";
+function submit(game: Expedition, text: string, participantId: string) {
+  const window = game.interaction.snapshot()!;
+  const action = text === "!charge" ? "charge" : text.split(" ")[1];
+  return game.accept({
+    windowId: window.id,
+    participantId,
+    inputId: crypto.randomUUID(),
+    action,
+    sentAt: Date.now(),
+  });
+}
 function checkpoint(game: Expedition) {
   game.run.collected = 2;
   game.run.x = 910;
@@ -13,7 +24,7 @@ describe("authoritative expedition", () => {
     checkpoint(game);
     game.interaction.resolve();
     checkpoint(game);
-    game.input("!supply boost", "ada");
+    submit(game, "!supply boost", "ada");
     game.interaction.resolve();
     expect(game.run.boostMs).toBe(15000);
     game.pause();
@@ -26,7 +37,7 @@ describe("authoritative expedition", () => {
     checkpoint(game);
     game.interaction.resolve();
     checkpoint(game);
-    game.input("!supply heal", "ada");
+    submit(game, "!supply heal", "ada");
     game.interaction.resolve();
     expect(game.run.hp).toBe(game.run.maxHp);
   });
@@ -34,7 +45,7 @@ describe("authoritative expedition", () => {
     const game = new Expedition();
     game.start(true, 2, "simulator");
     checkpoint(game);
-    game.input("!route left", "ada");
+    submit(game, "!route left", "ada");
     const outcome = game.interaction.resolve()!;
     expect(game.run.route).toBe("left");
     expect(game.run.hazards.length).toBe(6);
@@ -68,7 +79,7 @@ describe("authoritative expedition", () => {
     now += 30000;
     game.tick(1000);
     expect(game.interaction.snapshot()?.remainingMs).toBe(remaining);
-    expect(game.input("!route left", "a").reason).toBe("disconnected");
+    expect(submit(game, "!route left", "a").reason).toBe("paused");
     game.setTransport(true, "connected");
     expect(game.interaction.snapshot()?.phase).toBe("open");
   });
@@ -103,7 +114,7 @@ describe("authoritative expedition", () => {
     checkpoint(game);
     game.interaction.resolve();
     checkpoint(game);
-    game.input("!supply shield", "ada");
+    submit(game, "!supply shield", "ada");
     game.interaction.resolve();
     expect(game.run.shield).toBe(1);
     const h = game.run.hazards[0];

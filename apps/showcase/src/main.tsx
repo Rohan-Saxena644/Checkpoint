@@ -134,9 +134,9 @@ function WindowPanel({
   const w = snapshot.window,
     active = w && ["open", "paused"].includes(w.phase);
   const kind =
-    w?.definition.command === "!route"
+    w?.command === "!route"
       ? "route"
-      : w?.definition.command === "!supply"
+      : w?.command === "!supply"
         ? "supply"
         : "charge";
   return (
@@ -198,7 +198,7 @@ function WindowPanel({
                       <strong>{labels[option][0]}</strong>
                       <small>{labels[option][1]}</small>
                       <code>
-                        {w.definition.command} {option}
+                        {w.command} {option}
                       </code>
                     </div>
                     <b>{count}</b>
@@ -374,9 +374,9 @@ function App() {
   const activeWindow = s.window && ["open", "paused"].includes(s.window.phase),
     ready = ["ready", "won", "lost"].includes(s.run.status);
   const commands =
-    s.window?.definition.command === "!supply"
+    s.window?.command === "!supply"
       ? ["!supply shield", "!supply heal", "!supply boost"]
-      : s.window?.definition.command === "!charge"
+      : s.window?.command === "!charge"
         ? ["!charge"]
         : ["!route left", "!route right"];
   return (
@@ -626,9 +626,9 @@ function App() {
                         <span>
                           <small>CHECKPOINT REACHED</small>
                           <strong>
-                            {s.window?.definition.command === "!route"
+                            {s.window?.command === "!route"
                               ? "Let the crew choose the path."
-                              : s.window?.definition.command === "!supply"
+                              : s.window?.command === "!supply"
                                 ? "A little help for the road ahead."
                                 : "Crew, light up the final gate."}
                           </strong>
@@ -1168,7 +1168,6 @@ function SignalExample() {
               crypto.randomUUID(),
               {
                 kind: "choice",
-                command: "!signal",
                 options: ["amber", "cyan"],
                 fallback: "amber",
               },
@@ -1187,10 +1186,10 @@ function SignalExample() {
             onClick={() =>
               engine.current.accept({
                 windowId: state!.id,
-                userId: "synthetic-viewer",
-                deliveryId: crypto.randomUUID(),
+                participantId: "local-participant",
+                inputId: crypto.randomUUID(),
                 sentAt: Date.now(),
-                value,
+                action: value,
               })
             }
           >

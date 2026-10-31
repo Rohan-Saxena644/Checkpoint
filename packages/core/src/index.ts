@@ -1,22 +1,22 @@
 export type Choice = {
   kind: "choice";
-  command: string;
   options: readonly string[];
   fallback: string;
 };
 export type Goal = {
   kind: "goal";
-  command: string;
+  action: string;
   target: number;
-  fallback: "unprotected";
+  success: string;
+  fallback: string;
 };
 export type Definition = Choice | Goal;
 export type Phase = "open" | "paused" | "resolved" | "cancelled";
 export type Input = {
   windowId: string;
-  deliveryId: string;
-  userId: string;
-  value: string;
+  inputId: string;
+  participantId: string;
+  action: string;
   sentAt: number;
 };
 export type Outcome = {
@@ -58,6 +58,21 @@ export type LifecycleEvent =
     }
   | { type: "input"; result: InputResult; state: WindowState };
 
+/** The trusted host supplies window context and owns all acceptance decisions. */
+export interface AdapterHost {
+  currentWindow(): WindowState | undefined;
+  accept(input: Input): InputResult;
+}
+
+/** Attach a normalized input source. Transport authorization remains adapter-specific. */
+export interface InputAdapter {
+  start(host: AdapterHost): void;
+  stop(): void;
+}
+
+const validAction = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0 && value.length <= 128;
+
 /** FIFO delivery cache: bounded suppression, not a durable exactly-once guarantee. */
 export class BoundedSet {
   private values = new Set<string>();
@@ -90,6 +105,8 @@ export class Interaction {
     private maxParticipants = 10000,
     cacheSize = 4096,
   ) {
+    if (!Number.isInteger(maxParticipants) || maxParticipants < 1)
+      throw new Error("Invalid participant capacity");
     this.deliveries = new BoundedSet(cacheSize);
   }
   subscribe(listener: (event: LifecycleEvent) => void) {
@@ -111,14 +128,12 @@ export class Interaction {
       throw new Error("Use a unique window ID");
     if (!Number.isFinite(durationMs) || durationMs < 1 || durationMs > 300000)
       throw new Error("Invalid duration");
-    if (!/^![a-z]+$/.test(definition.command))
-      throw new Error("Invalid command");
     if (
       definition.kind === "choice" &&
       (definition.options.length < 2 ||
         definition.options.length > 16 ||
         new Set(definition.options).size !== definition.options.length ||
-        definition.options.some((v) => !/^[a-z0-9-]{1,24}$/.test(v)) ||
+        definition.options.some((v) => !validAction(v)) ||
         !definition.options.includes(definition.fallback))
     )
       throw new Error("Invalid choices");
@@ -126,7 +141,11 @@ export class Interaction {
       definition.kind === "goal" &&
       (!Number.isInteger(definition.target) ||
         definition.target < 1 ||
-        definition.target > this.maxParticipants)
+        definition.target > this.maxParticipants ||
+        !validAction(definition.action) ||
+        !validAction(definition.success) ||
+        !validAction(definition.fallback) ||
+        definition.success === definition.fallback)
     )
       throw new Error("Invalid goal");
     const now = this.clock();
@@ -141,7 +160,12 @@ export class Interaction {
       deadline: now + durationMs,
       remainingMs: durationMs,
       participants: 0,
-      counts: {},
+      counts: Object.fromEntries(
+        (definition.kind === "choice"
+          ? definition.options
+          : [definition.action]
+        ).map((action) => [action, 0]),
+      ),
     };
     this.emit("opened");
     return this.snapshot()!;
@@ -174,14 +198,13 @@ export class Interaction {
       return reject("closed");
     }
     if (
-      typeof input.userId !== "string" ||
-      !input.userId ||
-      input.userId.length > 128 ||
-      typeof input.deliveryId !== "string" ||
-      !input.deliveryId ||
-      input.deliveryId.length > 256 ||
-      typeof input.value !== "string" ||
-      input.value.length > 128 ||
+      typeof input.participantId !== "string" ||
+      !input.participantId ||
+      input.participantId.length > 128 ||
+      typeof input.inputId !== "string" ||
+      !input.inputId ||
+      input.inputId.length > 256 ||
+      !validAction(input.action) ||
       !Number.isFinite(input.sentAt)
     )
       return reject("invalid");
@@ -191,22 +214,22 @@ export class Interaction {
       now - input.sentAt > 10000
     )
       return reject("stale");
-    if (this.deliveries.has(input.deliveryId)) return reject("duplicate");
-    this.deliveries.add(input.deliveryId);
+    if (this.deliveries.has(input.inputId)) return reject("duplicate");
+    this.deliveries.add(input.inputId);
     const d = s.definition;
     if (
       d.kind === "choice"
-        ? !d.options.includes(input.value)
-        : input.value !== "charge"
+        ? !d.options.includes(input.action)
+        : input.action !== d.action
     )
       return reject("invalid");
-    const previous = this.votes.get(input.userId);
+    const previous = this.votes.get(input.participantId);
     if (d.kind === "goal" && previous) return reject("already-contributed");
     if (!previous && this.votes.size >= this.maxParticipants)
       return reject("capacity");
-    this.votes.set(input.userId, input.value);
+    this.votes.set(input.participantId, input.action);
     if (previous) s.counts[previous]--;
-    s.counts[input.value] = (s.counts[input.value] ?? 0) + 1;
+    s.counts[input.action] = (s.counts[input.action] ?? 0) + 1;
     s.participants = this.votes.size;
     const result: InputResult = {
       accepted: true,
@@ -255,7 +278,7 @@ export class Interaction {
           );
     } else {
       fallback = s.participants < d.target;
-      value = fallback ? d.fallback : "protected";
+      value = fallback ? d.fallback : d.success;
     }
     s.outcome = {
       id: `${s.id}:outcome`,
@@ -270,19 +293,4 @@ export class Interaction {
     this.emit("resolved");
     return structuredClone(s.outcome);
   }
-}
-
-/** Exact command grammar; transport timestamps and IDs are supplied by the adapter. */
-export function parseCommand(
-  text: string,
-  definition: Definition,
-): string | undefined {
-  if (text.length > 128) return;
-  const parts = text.trim().toLowerCase().split(/\s+/);
-  if (parts[0] !== definition.command) return;
-  if (definition.kind === "goal")
-    return parts.length === 1 ? "charge" : undefined;
-  return parts.length === 2 && definition.options.includes(parts[1])
-    ? parts[1]
-    : undefined;
 }

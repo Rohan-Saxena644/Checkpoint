@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Interaction, type Input } from "@checkpoint/core";
 import { EventEmitter } from "node:events";
 import type WebSocket from "ws";
-import {
-  TwitchAdapter,
-  type ChatMessage,
-  type ConnectionStatus,
-} from "./index.js";
+import { TwitchAdapter, type ConnectionStatus } from "./index.js";
 class FakeSocket extends EventEmitter {
   readyState = 1;
   closed = false;
@@ -56,7 +53,7 @@ afterEach(() => {
 function fixture() {
   const sockets: FakeSocket[] = [],
     urls: string[] = [],
-    inputs: ChatMessage[] = [],
+    inputs: Input[] = [],
     statuses: ConnectionStatus[] = [];
   const request = vi.fn<typeof fetch>(async (url) => {
     if (String(url).endsWith("/token"))
@@ -85,7 +82,16 @@ function fixture() {
       clientSecret: "fake-secret",
       redirectUri: "http://localhost:4173/auth/twitch/callback",
     },
-    (input) => inputs.push(input),
+    (chat, window) =>
+      chat.text === "!route left"
+        ? {
+            windowId: window.id,
+            participantId: chat.userId,
+            inputId: chat.deliveryId,
+            action: "left",
+            sentAt: chat.sentAt,
+          }
+        : undefined,
     (status) => statuses.push(status),
     request,
     (url) => {
@@ -95,6 +101,19 @@ function fixture() {
       return socket as unknown as WebSocket;
     },
   );
+  const core = new Interaction();
+  core.open(
+    "route-window",
+    { kind: "choice", options: ["left", "right"], fallback: "right" },
+    10000,
+  );
+  adapter.start({
+    currentWindow: () => core.snapshot(),
+    accept: (input) => {
+      inputs.push(input);
+      return core.accept(input);
+    },
+  });
   active.push(adapter);
   const chat = (text = "!route left", overrides = {}) => ({
     subscription: { type: "channel.chat.message" },
@@ -105,7 +124,7 @@ function fixture() {
       ...overrides,
     },
   });
-  return { adapter, sockets, urls, inputs, statuses, request, chat };
+  return { adapter, sockets, urls, inputs, statuses, request, chat, core };
 }
 describe("Twitch adapter using synthetic EventSub frames", () => {
   it("requests only user:read:chat and validates before subscribing to version 1", async () => {
@@ -152,9 +171,13 @@ describe("Twitch adapter using synthetic EventSub frames", () => {
     await settle();
     expect(f.inputs).toHaveLength(1);
     expect(f.inputs[0]).toMatchObject({
-      userId: "ada",
-      deliveryId: "same",
-      text: "!route left",
+      participantId: "ada",
+      inputId: "same",
+      action: "left",
+    });
+    expect(f.core.snapshot()).toMatchObject({
+      participants: 1,
+      counts: { left: 1, right: 0 },
     });
   });
   it("transfers a reconnect session without closing early or resubscribing", async () => {
