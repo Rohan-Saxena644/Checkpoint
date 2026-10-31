@@ -66,3 +66,5 @@ Reviewed on **31 October 2026**: [overview](https://twitchcon-codex.devpost.com/
 - Browser: all **5 scenarios** passed across the full run (4 passed, 1 transient read-reset failure) and a focused crew rerun (1 passed). Read-only polling now retries transient resets; controls are never retried automatically.
 - Live Twitch: **not verified**; app credentials/authorization absent.
 - Media: count only the three finalized H.264 review sources. The supplemental failure take is incomplete and excluded. Render validation is stored separately in submission/render/validation.json.
+
+Local review MP4 validated: **159.849 seconds, 1920×1080, H.264, silent**, 7,113,040 bytes. Complete-file browser playback and beginning/middle/end frame inspection passed. The file remains clearly labeled **INCOMPLETE** because live Twitch, genuine Codex desktop footage and recorded narration are missing. See `submission/render/validation.json`. No media was uploaded.

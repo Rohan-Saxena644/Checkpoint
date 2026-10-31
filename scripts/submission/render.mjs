@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { chromium } from "@playwright/test";
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
@@ -391,76 +392,27 @@ try {
   );
   await writeQueue;
   console.log(JSON.stringify(result));
-  const inspect = await browser.newPage({
-    viewport: { width: 1920, height: 1080 },
-  });
-  await inspect.route("**/review.mp4", async (route) =>
-    route.fulfill({ contentType: "video/mp4", body: await readFile(target) }),
-  );
-  await inspect.setContent(
-    "<style>body{margin:0;background:#0b111b}video{width:1920px;height:1080px}</style><video muted></video>",
-  );
-  const metadata = await inspect.evaluate(async () => {
-    const v = document.querySelector("video");
-    v.src = "http://localhost/review.mp4";
-    await new Promise((resolve, reject) => {
-      v.onloadeddata = resolve;
-      v.onerror = reject;
-    });
-    return { duration: v.duration, width: v.videoWidth, height: v.videoHeight };
-  });
-  assert(
-    Number.isFinite(metadata.duration) &&
-      metadata.duration >= 159 &&
-      metadata.duration < 180,
-    `Invalid output duration ${metadata.duration}`,
-  );
-  assert.equal(metadata.width, 1920);
-  assert.equal(metadata.height, 1080);
-  for (const [name, time] of [
-    ["beginning", 1],
-    ["middle", 80],
-    ["ending", 158],
-    ["missing-codex", 140],
-  ]) {
-    await inspect.evaluate(async (t) => {
-      const v = document.querySelector("video");
-      await new Promise((resolve) => {
-        v.onseeked = resolve;
-        v.currentTime = t;
-      });
-    }, time);
-    await inspect.screenshot({ path: path.join(output, `${name}.png`) });
-  }
   await writeFile(
-    path.join(output, "validation.json"),
+    path.join(output, "render-details.json"),
+    JSON.stringify(result, null, 2),
+  );
+  await writeFile(
+    path.join(output, "review-plan.json"),
     JSON.stringify(
       {
         status: "INCOMPLETE_REVIEW",
-        ...metadata,
-        ...result,
-        liveTwitchVerified: false,
-        codexDesktopPresent: false,
-        audio: "Silent review; narration script supplied separately",
-        missing: [
-          "Real Twitch route input footage",
-          "Real Twitch cooperative footage",
-          "Genuine Codex desktop build evidence",
-          "Recorded narration",
-        ],
-        inspectionFrames: [
-          "beginning.png",
-          "middle.png",
-          "ending.png",
-          "missing-codex.png",
-        ],
+        seconds: 160,
+        segments: result.effectivePlan,
       },
       null,
       2,
     ),
   );
+  execFileSync(process.execPath, ["scripts/submission/validate.mjs"], {
+    stdio: "inherit",
+  });
   console.log(
-    `Validated incomplete review: ${target} (${metadata.duration.toFixed(2)} seconds). Real Twitch and Codex evidence remain missing.`,
+    "Local incomplete review rendered and validated. Real Twitch/Codex evidence remains missing.",
   );
 } finally {
   await browser.close();
