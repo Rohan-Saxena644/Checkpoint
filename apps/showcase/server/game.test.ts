@@ -68,6 +68,8 @@ describe("authoritative expedition", () => {
     expect(game.run.status).toBe("playing");
     expect(game.run.stage).toBe(0);
     expect(game.run.total).toBe(0);
+    expect(game.snapshot().window).toBeUndefined();
+    expect(game.windowCommand).toBe("!route");
   });
   it("freezes movement and deadline on disconnected transport", () => {
     let now = 1000;
@@ -124,6 +126,18 @@ describe("authoritative expedition", () => {
     game.tick(1);
     expect(game.run.shield).toBe(0);
     expect(game.run.hp).toBe(game.run.maxHp);
+  });
+  it("healing reports the actual bounded health change", () => {
+    const game = new Expedition();
+    game.start(true, 1, "simulator");
+    checkpoint(game);
+    game.interaction.resolve();
+    game.run.hp = 3;
+    checkpoint(game);
+    submit(game, "!supply heal", "ada");
+    game.interaction.resolve();
+    expect(game.run.hp).toBe(5);
+    expect(game.run.message).toContain("+2 health");
   });
   it("cancel applies visible fallback and rejects previous outcomes after restart", () => {
     const game = new Expedition();

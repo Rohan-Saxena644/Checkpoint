@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import type { Expedition } from "../apps/showcase/server/game.js";
 type Snapshot = ReturnType<Expedition["snapshot"]>;
 const state = async (page: Page): Promise<Snapshot> =>
-  (await page.request.get("/api/state")).json();
+  (await page.request.get("/api/state", { maxRetries: 2 })).json();
 async function unlock(page: Page) {
   await page.goto("/play");
   await page
@@ -75,12 +75,28 @@ test("complete a crew expedition, recover a simulated loss, inspect overlay and 
   const overlay = await context.newPage();
   await overlay.goto("/overlay");
   await expect(overlay.getByText("Which way, crew?")).toBeVisible();
+  await expect(
+    overlay.getByText("2 accepted participants").first(),
+  ).toBeVisible();
+  expect(await overlay.getByRole("button").count()).toBe(0);
+  const overlaySeconds = Number.parseInt(
+    await overlay.locator(".countdown").innerText(),
+  );
+  expect(
+    Math.abs(
+      overlaySeconds -
+        Math.ceil((await state(page)).window!.remainingMs / 1000),
+    ),
+  ).toBeLessThanOrEqual(1);
   await overlay.screenshot({
     path: "test-results/overlay-window.png",
     omitBackground: true,
   });
-  await overlay.close();
   await resolve(page);
+  await expect(
+    overlay.getByRole("heading", { name: "The Shatterpath", exact: true }),
+  ).toBeVisible();
+  await overlay.close();
   expect((await state(page)).run.route).toBe("left");
   expect((await state(page)).run.hazards).toHaveLength(6);
   await page.screenshot({
@@ -94,6 +110,9 @@ test("complete a crew expedition, recover a simulated loss, inspect overlay and 
     data: { type: "sim-disconnect" },
   });
   await expect(page.getByText("Holding the signal.")).toBeVisible();
+  await expect(page.locator(".paused-countdown")).toContainText(
+    "seconds remain",
+  );
   await page.waitForTimeout(500);
   expect((await state(page)).window!.remainingMs).toBeLessThanOrEqual(before);
   expect((await state(page)).window!.phase).toBe("paused");
@@ -123,7 +142,31 @@ test("complete a crew expedition, recover a simulated loss, inspect overlay and 
   await page.getByRole("button", { name: "Start a new expedition" }).click();
   expect((await state(page)).run.stage).toBe(0);
   expect((await state(page)).run.total).toBe(0);
+  expect((await state(page)).window).toBeUndefined();
   expect(errors).toEqual([]);
+});
+
+test("storm damage reaches the failure ending and restart clears the previous run", async ({
+  page,
+}) => {
+  await unlock(page);
+  await page.request.post("/api/control", {
+    headers: { origin: "http://localhost:4173" },
+    data: { type: "start", easy: false, crew: 2, mode: "simulator" },
+  });
+  const hazard = (await state(page)).run.hazards[0];
+  await pilot(page, hazard.x, hazard.y);
+  await expect
+    .poll(async () => (await state(page)).run.status, { timeout: 35000 })
+    .toBe("lost");
+  await expect(
+    page.getByRole("heading", { name: "Every light gets another chance." }),
+  ).toBeVisible();
+  expect((await state(page)).run.hp).toBe(0);
+  await page.getByRole("button", { name: "Start a new expedition" }).click();
+  expect((await state(page)).run.hp).toBe(5);
+  expect((await state(page)).run.stage).toBe(0);
+  expect((await state(page)).window).toBeUndefined();
 });
 test("complete a no-viewer expedition with the real timer and explicit fallbacks", async ({
   page,

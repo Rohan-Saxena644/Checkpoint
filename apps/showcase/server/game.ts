@@ -100,6 +100,7 @@ export class Expedition {
     this.offlineContinuation = false;
     this.keys = { x: 0, y: 0 };
     this.run = this.fresh(easy, crew);
+    this.windowCommand = "!route";
     this.run.status = "playing";
     this.setupStage();
     this.log("run", "Expedition started");
@@ -287,6 +288,7 @@ export class Expedition {
       return false;
     }
     this.applied.add(outcome.id);
+    const hpBefore = r.hp;
     if (r.stage === 0) r.route = outcome.value;
     if (r.stage === 1) {
       r.supply = outcome.value;
@@ -298,6 +300,21 @@ export class Expedition {
     r.stage++;
     r.status = "playing";
     this.setupStage();
+    const effect =
+      outcome.value === "left"
+        ? "Shatterpath chosen: 6 hazards, 4 salvage opportunities."
+        : outcome.value === "right"
+          ? "Stillwater chosen: 2 hazards, 2 salvage opportunities."
+          : outcome.value === "shield"
+            ? "Shield delivered: absorbs one storm strike."
+            : outcome.value === "heal"
+              ? `Healing delivered: +${r.hp - hpBefore} health (maximum ${r.maxHp}).`
+              : outcome.value === "boost"
+                ? "Trail runners delivered: +50% speed for 15 seconds of play."
+                : outcome.value === "protected"
+                  ? "Protective field online: 12 seconds of protection."
+                  : "Gate fallback: 3 seconds of crossing grace.";
+    r.message = `${effect} ${r.message}`;
     if (outcome.fallback)
       r.message = `Crew fallback: ${outcome.value === "unprotected" ? "3-second crossing grace" : outcome.value}. ${r.message}`;
     this.log(
@@ -326,8 +343,12 @@ export class Expedition {
       "Window cancelled; safe route / healing / 3-second grace",
     );
   }
-  snapshot() {
+  currentWindow() {
     const window = this.interaction.snapshot();
+    return window?.id.startsWith(`${this.run.id}:`) ? window : undefined;
+  }
+  snapshot() {
+    const window = this.currentWindow();
     return {
       run: structuredClone(this.run),
       window: window ? { ...window, command: this.windowCommand } : undefined,

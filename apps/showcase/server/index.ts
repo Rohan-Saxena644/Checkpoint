@@ -23,7 +23,7 @@ export async function createCheckpointServer(
     server = createServer(app),
     game = new Expedition();
   const host: AdapterHost = {
-    currentWindow: () => game.interaction.snapshot(),
+    currentWindow: () => game.currentWindow(),
     accept: (input) => game.accept(input),
   };
   const simulator = new SimulatorAdapter((message, window) =>

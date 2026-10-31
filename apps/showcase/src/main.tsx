@@ -147,7 +147,9 @@ function WindowPanel({
       <div className="eyebrow">
         <span className={`dot ${active ? "cyan" : ""}`} />
         {active
-          ? "CREW WINDOW OPEN"
+          ? w.phase === "paused"
+            ? "CREW WINDOW PAUSED"
+            : "CREW WINDOW OPEN"
           : w?.outcome
             ? "CREW DECISION"
             : "AWAITING CHECKPOINT"}
@@ -168,7 +170,11 @@ function WindowPanel({
       </h2>
       <p>
         {active
-          ? "Enter a command in chat. Every crew member has a say."
+          ? w.phase === "paused"
+            ? "Input and timer are paused. Wait for the signal to resume."
+            : snapshot.mode === "simulator"
+              ? "SIMULATED CREW · Use the synthetic command buttons."
+              : "Enter a command in Twitch chat. Every crew member has a say."
           : w?.outcome
             ? `${w.outcome.participants} accepted participants · ${w.outcome.fallback ? "Safe fallback used" : "Outcome applied to the expedition"}`
             : "Reach a beacon to invite chat into your expedition."}
@@ -504,8 +510,12 @@ function App() {
                     </span>
                     <span>
                       <Icon name="beacon" size={15} />
-                      {s.run.total}
-                      <small> fragments</small>
+                      {s.run.stage < 3 ? `${s.run.collected} / 2` : s.run.total}
+                      <small>
+                        {s.run.stage < 3
+                          ? " region fragments"
+                          : " total fragments"}
+                      </small>
                     </span>
                     <span>
                       {Math.floor(s.run.elapsedMs / 60000)
@@ -539,6 +549,19 @@ function App() {
                         : "THE AMBER EXPEDITION"}
                     </small>
                   </div>
+                  {!ready &&
+                    s.run.status === "playing" &&
+                    (s.run.fieldMs > 0 ||
+                      s.run.boostMs > 0 ||
+                      s.run.shield > 0) && (
+                      <div className="effect-chip" aria-live="polite">
+                        {s.run.fieldMs > 0
+                          ? `${s.window?.outcome?.fallback ? "Crossing grace" : "Protective field"} · ${Math.ceil(s.run.fieldMs / 1000)}s`
+                          : s.run.boostMs > 0
+                            ? `Trail runners · +50% speed · ${Math.ceil(s.run.boostMs / 1000)}s`
+                            : "Shield ready · absorbs one strike"}
+                      </div>
+                    )}
                   {ready && (
                     <div className="game-cover">
                       <div className="cover-emblem">
@@ -604,6 +627,13 @@ function App() {
                               ? "Crew transport disconnected. Window and game are paused."
                               : "Emergency pause. Your remaining window time is preserved."}
                         </p>
+                        {activeWindow && (
+                          <p className="paused-countdown">
+                            Crew window paused ·{" "}
+                            {Math.ceil(s.window!.remainingMs / 1000)} seconds
+                            remain
+                          </p>
+                        )}
                         {authenticated &&
                           (s.connected || s.offlineContinuation) &&
                           online && (
