@@ -6,12 +6,12 @@ Build and verification completed across 30–31 October 2026, Node 22.16 on Wind
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | TypeScript strict type check                                                                  | Passed                                                              |
 | ESLint                                                                                        | Passed                                                              |
-| Vitest core, synthetic Twitch, game authority and controller security                         | **45 tests passed across 5 files**                                  |
+| Vitest core, synthetic Twitch, game authority and controller security                         | **47 tests passed across 5 files on 1 November**                     |
 | Production packages, browser bundle and Node build                                            | Passed                                                              |
 | Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **All 5 scenarios passed across the final run and focused retry**   |
 | Independent console signal-panel integration                                                  | Passed: two generic participants, cyan result, one applied effect   |
 | Desktop, mobile and OBS overlay screenshots                                                   | Captured and visually inspected; screenshots in `docs/screenshots/` |
-| Live OAuth and real single-channel Twitch commands                                            | **Pending. No credentials configured or used.**                     |
+| Live OAuth and real single-channel Twitch commands                                            | **Passed 1 November: route, supply, cooperative goal and winning ending** |
 | Standard-mode 3–5-minute play balance                                                         | Design target; no user playtest or timing study claimed             |
 | Public deployment, video, npm release, repository publication and submission                  | Not performed                                                       |
 
@@ -31,7 +31,19 @@ The browser suite owns a temporary loopback server, enters its real private cont
 
 The documented production start was also exercised: `/play`, `/overlay`, `/dev`, `/example`, and `/api/state` all returned HTTP 200. A separate development smoke check launched actual Chromium, confirmed the Vite hot-update WebSocket connected, and waited for the rendered showcase. All temporary servers were stopped after verification.
 
-## Live test to perform
+## Live verification — 1 November 2026
+
+The owner explicitly authorized their own channel and sent real Twitch chat commands. The adapter connected through real OAuth/EventSub, with the authorized channel matched locally without storing account IDs or tokens in this record. Easy mode used the one-participant preset. Each normal 18-second checkpoint was paused for preparation, then resumed before the owner sent the command. A local helper moved through the normal protected movement endpoint at normal game speed, collecting fragments without teleporting or changing game state directly.
+
+- `!route left`: accepted, one participant, Left won 1–0 without fallback; the game advanced to the next region.
+- `!supply shield`: accepted, one participant, Shield resolved without fallback; actual game shield became 1.
+- `!charge`: accepted, one participant, goal resolved to Protected without fallback; normal movement then reached the winning ending with 6 health.
+
+The first attempt exposed a host clock about three minutes ahead of Twitch. The adapter now translates provider timestamps using the session-welcome clock offset while preserving stale/future rejection and core timing rules. Focused regression tests cover both clock-offset directions, stale messages and future messages. This is live functional evidence, not a recorded video. Multi-account cooperation, real token revocation and a real transport outage were not exercised live; their automated coverage remains explicitly synthetic.
+
+After the fix, strict type checking, all 47 tests and the production build passed. The restricted Windows test process initially encountered a subprocess-permission error; rerunning with permitted subprocess access passed.
+
+## Remaining optional live checks
 
 Configure a registered app, authorize the broadcaster explicitly, choose Twitch mode and a tiny preset, reach each checkpoint, send real commands from one/two consenting accounts, and verify actual game changes and the OBS overlay. Confirm duplicate user voting policy, connection loss pause/resume, cancellation fallback and token revocation. Record only a minimal dated result here; never commit real chat transcripts, account IDs, app secrets or tokens.
 

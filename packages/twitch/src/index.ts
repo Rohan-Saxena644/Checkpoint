@@ -84,6 +84,7 @@ export class TwitchAdapter implements InputAdapter {
   private retry = 0;
   private refreshInFlight?: Promise<void>;
   private seen = new BoundedSet(4096);
+  private clockOffsetMs = 0;
   constructor(
     private config: TwitchConfig,
     private normalize: (
@@ -263,6 +264,12 @@ export class TwitchAdapter implements InputAdapter {
         const { metadata: meta, payload } = parsed.data;
         if (meta.message_type === "session_welcome" && payload.session) {
           if (welcomed) return;
+          const providerTime = Date.parse(meta.message_timestamp);
+          if (!Number.isFinite(providerTime))
+            throw new Error("Invalid Twitch session timestamp");
+          // Normalize provider timestamps into the trusted host's clock domain.
+          // Preserve input-age checks instead of widening the stale/replay window.
+          this.clockOffsetMs = Date.now() - providerTime;
           welcomed = true;
           timeoutMs = (payload.session.keepalive_timeout_seconds ?? 10) * 1000;
           alive = Date.now();
@@ -311,7 +318,7 @@ export class TwitchAdapter implements InputAdapter {
         )
           return;
         const event = payload.event,
-          sentAt = Date.parse(meta.message_timestamp);
+          sentAt = Date.parse(meta.message_timestamp) + this.clockOffsetMs;
         if (
           !Number.isFinite(sentAt) ||
           Date.now() - sentAt > 10000 ||

@@ -127,6 +127,43 @@ function fixture() {
   return { adapter, sockets, urls, inputs, statuses, request, chat, core };
 }
 describe("Twitch adapter using synthetic EventSub frames", () => {
+  it.each([-180000, 180000])(
+    "normalizes a %i ms host/provider clock difference without accepting stale events",
+    async (skew) => {
+      const f = fixture();
+      await f.adapter.authorize("fake");
+      const providerNow = Date.now() - skew;
+      f.sockets[0].frame(
+        "session_welcome",
+        { session: { id: "clock-session", keepalive_timeout_seconds: 10 } },
+        "clock-welcome",
+        new Date(providerNow).toISOString(),
+      );
+      await settle();
+      f.sockets[0].frame(
+        "notification",
+        f.chat(),
+        "fresh-clock",
+        new Date(providerNow).toISOString(),
+      );
+      f.sockets[0].frame(
+        "notification",
+        f.chat(),
+        "old-clock",
+        new Date(providerNow - 11000).toISOString(),
+      );
+      f.sockets[0].frame(
+        "notification",
+        f.chat(),
+        "future-clock",
+        new Date(providerNow + 3000).toISOString(),
+      );
+      await settle();
+      expect(f.inputs).toHaveLength(1);
+      expect(Math.abs(f.inputs[0].sentAt - Date.now())).toBeLessThan(2000);
+      expect(f.core.snapshot()?.participants).toBe(1);
+    },
+  );
   it("requests only user:read:chat and validates before subscribing to version 1", async () => {
     const f = fixture();
     const url = new URL(f.adapter.authorizationUrl("csrf-state"));

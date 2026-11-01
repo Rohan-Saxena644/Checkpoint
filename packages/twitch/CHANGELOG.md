@@ -2,6 +2,10 @@
 
 Experimental API. Breaking changes are possible before 1.0.
 
+## Unreleased
+
+- Normalize EventSub timestamps to the host clock using session welcome, preserving stale/future rejection when host and provider clocks differ. Added regression tests for offsets in both directions. Verified real OAuth, route, supply and cooperative goal through a complete one-participant game run.
+
 ## 0.2.0 — 2026-10-31
 
 - **Breaking:** constructor accepts a `(chat, window) => Input | undefined` normalizer instead of a raw-chat callback. Attach `AdapterHost` with `start(host)` before OAuth authorization.

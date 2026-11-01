@@ -1,6 +1,6 @@
 # Twitch setup and transport policy
 
-Documentation inspected on **31 October 2026**. Live authorization and chat verification remain pending. All adapter automated tests use synthetic messages and fake HTTP responses.
+Documentation inspected on **31 October 2026**. Live authorization and all three chat interactions passed on **1 November 2026**; see [verification](VERIFICATION.md). Adapter automated tests remain synthetic and use fake HTTP responses.
 
 1. Use your own Twitch account with verified email and two-factor authentication. [Register an app](https://dev.twitch.tv/docs/authentication/register-app/) in the developer console; select a suitable game integration category and **Confidential** client type. Register the exact OAuth redirect URL `http://localhost:4173/auth/twitch/callback`.
 2. Copy `.env.example` to `.env`. Enter the app's client ID and client secret. Keep the app secret private. Never use a `VITE_` prefix for secrets. No existing account credentials are discovered or used automatically.
@@ -28,4 +28,6 @@ Current documented WebSocket limits are 3 connections per client/user tuple, 300
 
 The callback and browser must use the configured `PUBLIC_ORIGIN`. OBS uses the same origin and is read-only. All URLs in `.env.example` refer to the local machine. A static host cannot keep the Node EventSub connection or authoritative state. A separate deployment needs explicit authorization and an operational HTTPS/WebSocket setup; none has been provisioned.
 
-For the final take, complete OAuth with recording stopped. Keep the exact command, accepted count, timer, resolved result and visible effect in one continuous causal sequence. See [recording checklist](RECORDING_CHECKLIST.md) for the two manual live clips. Live verification remains pending: no .env or configured Twitch client ID/secret was available during this phase.
+For the final take, complete OAuth with recording stopped. Keep the exact command, accepted count, timer, resolved result and visible effect in one continuous causal sequence. See [recording checklist](RECORDING_CHECKLIST.md) for the two manual live clips. Live functional verification passed; recorded Twitch footage is still required.
+
+The adapter translates Twitch timestamps into the host clock using the EventSub session-welcome timestamp. This handles a host clock offset without extending choice windows: normalized messages older than ten seconds or more than two seconds in the future are still rejected, and core window/resume boundaries still apply. Synchronize the host clock for reliable operation; this calibration does not eliminate network delay or clock drift during a session. Restarting the server clears in-memory OAuth tokens and requires authorization again.
