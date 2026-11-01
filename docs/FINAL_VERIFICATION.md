@@ -1,5 +1,7 @@
 # Final verification and submission handoff
 
+**Update — 2 November 2026:** Real OAuth/EventSub and route, supply and one-participant cooperative charge passed through the winning ending. The clock-skew fix, 47 tests, strict type checking and production build passed. The owner supplied a 155.5-second real Twitch/game recording; sampled visual review is in [OWNER_FOOTAGE_REVIEW.md](OWNER_FOOTAGE_REVIEW.md). This supersedes the historical pending-live statements below. The existing review MP4 is still incomplete: the owner footage has not yet been edited into it, and genuine Codex footage plus the English explanation remain outstanding. No upload or publication has occurred.
+
 Feature scope is frozen. This phase changes only demonstrated gameplay feedback, restart cleanup, focused regression coverage and local recording/submission materials. No SDK features, engines, interaction types, integrations or dependencies were added.
 
 ## Status
