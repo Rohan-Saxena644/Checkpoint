@@ -66,11 +66,13 @@ See [docs/TWITCH_SETUP.md](docs/TWITCH_SETUP.md) for the complete setup and veri
 3. Restart the server, unlock controls, select **Twitch**, then **Authorize broadcaster**. Sign in as the broadcaster whose channel will supply commands. This app supports that one account/channel, not a separate cloud bot.
 4. After the dashboard says connected, begin a **Twitch** expedition. In ordinary channel chat, use the displayed commands. Only the currently appropriate window accepts them.
 
-The adapter implements OAuth authorization-code exchange, `user:read:chat` only, startup and 55-minute validation, expiry refresh, EventSub `channel.chat.message` v1, delivery deduplication, keepalive monitoring, session transfer, cold reconnect/resubscription, bounded backoff, revocation and rate-limit reset handling. It does not send messages to chat. **Live channel testing is pending** until you configure credentials and authorize the broadcaster. Synthetic tests are not proof of a live Twitch connection.
+The adapter implements OAuth authorization-code exchange, `user:read:chat` only, startup and 55-minute validation, expiry refresh, EventSub `channel.chat.message` v1, delivery deduplication, keepalive monitoring, session transfer, cold reconnect/resubscription, bounded backoff, revocation and rate-limit reset handling. It does not send messages to chat. **Real OAuth/EventSub, route, supply and a one-person cooperative goal were verified through a winning run on 1 November 2026.** Larger crews and transport failures have separate synthetic coverage; see [verification](docs/VERIFICATION.md).
 
 ## Use the SDK
 
 **Experimental API, version 0.2.0.** Start with the [standalone core package guide](packages/core/README.md), [adapter contract](packages/core/README.md#minimal-adapter-interface), and [migration notes](packages/core/CHANGELOG.md). The core has zero runtime dependencies and no Twitch, Node, React, server or game imports. Definitions contain generic actions; chat grammar belongs to the showcase adapters. Browser compatibility does not make client-side votes trustworthy: real shared decisions belong in a trusted host.
+
+**Connecting your own game:** follow [the game integration guide](docs/INTEGRATING_YOUR_GAME.md) for local package installation, responsibilities and the existing Twitch adapter wiring. Streamers can run the included showcase; adapting another game requires access to its code or a developer-provided integration. This is not a universal mod or a hosted service.
 
 This copyable two-participant example uses only public package exports and applies a repeated outcome once. It is also the existing console signal panel, not a new application.
 
@@ -151,9 +153,9 @@ This is a **single local authoritative process**. Ordinary static hosting cannot
 - [Demo script under three minutes](docs/DEMO_SCRIPT.md)
 - [Devpost draft](docs/DEVPOST_DRAFT.md)
 - [Submission checklist with official sources](docs/SUBMISSION_CHECKLIST.md)
-- [Verification record and pending live test](docs/VERIFICATION.md)
+- [Verification record, including real Twitch results](docs/VERIFICATION.md)
 
-No video, deployment, npm release, published repository, or hackathon submission is claimed. To obtain the real Codex session ID, type **`/status` in the main thread where most of this project was built**, as documented in the [hackathon resources](https://twitchcon-codex.devpost.com/resources). Do not substitute a generated ID.
+The local submission-video handoff is documented in [FINAL_VIDEO_EDIT.md](docs/FINAL_VIDEO_EDIT.md). No deployment, npm release, repository publication, video upload or hackathon submission has been performed by these scripts. Obtain the real Codex session ID from the main build thread for the submission form; do not substitute a generated ID.
 
 MIT licensed. Checkpoint focuses on explicit game-controlled participation windows; it does not claim to be the first Twitch SDK or voting system.
 
@@ -166,4 +168,4 @@ npm.cmd exec tsx -- scripts/submission/record.ts
 node scripts/submission/render.mjs
 ```
 
-The capture script owns loopback port 4175, uses normal controls and natural deadlines, and records only labeled synthetic gameplay plus the actual development example. The renderer produces a **silent INCOMPLETE review**, never a final submission: real Twitch and genuine Codex desktop clips remain manual requirements. Files stay local under ignored submission/footage/ and submission/render/. Nothing is uploaded or published.
+These older capture/review commands produce labeled synthetic footage and a silent incomplete review. For the edit using the owner's real Twitch and Codex recordings, follow [FINAL_VIDEO_EDIT.md](docs/FINAL_VIDEO_EDIT.md). Final media stays in ignored `submission/final/`; inspect its validation record before release. Nothing is uploaded or published by the tools.

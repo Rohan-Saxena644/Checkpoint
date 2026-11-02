@@ -1,72 +1,43 @@
-# Final verification and submission handoff
+﻿# Final verification and submission handoff
 
-**Update — 2 November 2026:** Real OAuth/EventSub and route, supply and one-participant cooperative charge passed through the winning ending. The clock-skew fix, 47 tests, strict type checking and production build passed. The owner supplied a 155.5-second real Twitch/game recording; sampled visual review is in [OWNER_FOOTAGE_REVIEW.md](OWNER_FOOTAGE_REVIEW.md). This supersedes the historical pending-live statements below. The existing review MP4 is still incomplete: the owner footage has not yet been edited into it, and genuine Codex footage plus the English explanation remain outstanding. No upload or publication has occurred.
+Updated 2 November 2026. Implementation scope is complete: one Twitch showcase and an experimental reusable TypeScript SDK. No additional engines, platforms or runtime AI were added.
 
-Feature scope is frozen. This phase changes only demonstrated gameplay feedback, restart cleanup, focused regression coverage and local recording/submission materials. No SDK features, engines, interaction types, integrations or dependencies were added.
+## Verified
 
-## Status
+- **Real Twitch:** broadcaster OAuth/EventSub connected. One consenting participant's route, shield and cooperative charge were accepted and applied through the winning ending, with the explicit one-person preset. Movement used normal protected controls; no teleportation or changed 18-second timing. The owner recorded real chat and the game.
+- **Application:** 47 tests, strict TypeScript checking and production build passed again on camera. Lint passed after documentation/edit-script changes. Earlier browser checks passed all five scenarios across the full run and focused retry: progression, failure/restart, no-viewer fallback, crew interaction, recovery, mobile layout and read-only overlay.
+- **Library:** the zero-dependency core passes offline with no secrets. Its six-file archive was installed, compiled and run outside monorepo aliases. Both core and Twitch archives also compiled and ran in a fresh external ESM/TypeScript consumer. Runtime networking was denied; installing Twitch dependencies required registry access because the npm cache lacked archives.
+- **Footage:** real Twitch/game recording, genuine Codex test/build recording, labeled simulated reliability, and actual local-button/CLI integration. The SDK source was recaptured after an older clip proved stale. Actual CLI result: `Signal: cyan; participants: 2; effects applied: 1`.
 
-| Area                                                                                   | Evidence / boundary                                                                                                                                                                                                                                               |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full progression, route effect, shield absorption, two-person goal, ending and restart | Normal-control simulator capture with natural 18-second windows; assertions and source times in `submission/footage/capture-report.json`. Separate browser regression suite also exercises the complete loop.                                                     |
-| Failure ending and restart                                                             | Focused browser regression deliberately stands in a real storm hazard; the supplemental recording was interrupted and is excluded from approved footage. No health injection or teleport is used by recording.                                                    |
-| Supply effects                                                                         | Shield absorption captured; healing's actual +2/cap and the boost's bounded active-play duration are unit-tested. Active shield/boost/field now have readable on-map feedback.                                                                                    |
-| No-viewer fallback                                                                     | Browser no-input route expiry and complete fallback run, plus natural no-input supply capture. No fake viewers are inserted.                                                                                                                                      |
-| Commands, timer, accepted input, outcome                                               | Canvas checkpoint command banner, accepted counters, bounded effect messages, and separate synchronized overlay. Paused input now says paused and shows remaining seconds.                                                                                        |
-| Overlay read-only                                                                      | Unauthenticated control HTTP POST returns 403; existing security test closes even an authenticated broadcast socket on a control message (1008).                                                                                                                  |
-| Input/reconnect reliability                                                            | Core/synthetic adapter tests and `/dev` capture cover invalid, repeated, duplicate-delivery, stale/late and old-window input, frozen timer, resume and duplicate outcome application. This is simulated/mocked verification.                                      |
-| Live Twitch                                                                            | **PENDING**. No `.env` or configured Twitch client ID/secret was available. No broadcaster authorization, real message, or real outage is claimed.                                                                                                                |
-| Video                                                                                  | The renderer produces a **silent INCOMPLETE review**, with synthetic labels, a missing-Codex card, and no submission-ready claim. Required manual sources are in `CLIP_MANIFEST.md`. Confirm `submission/render/validation.json` before claiming a render passed. |
+Real multi-account cooperation, real revocation and a real outage were not live-tested. Their automated checks are synthetic. No deployment, long-term balance study, crash durability or multi-tenant hosting is claimed.
 
-## Fixed during this phase
-
-- Restart previously left the last run's decision/command visible. The showcase now exposes a window only when it belongs to the current run, and resets the presentation command to `!route`. Regression checks cover restart cleanup.
-- Current-region collection was unclear because the HUD showed the run total. It now shows region progress toward the two-fragment checkpoint requirement.
-- Paused windows previously invited commands. They now explicitly pause input instructions and show preserved remaining seconds in the game view.
-- Supply/gate effects were subtle. The map now shows existing shield, speed or field status, and outcome text states the actual bounded effect (including healing's real amount). Mechanics and deadlines are unchanged.
-- Native multi-page WebM finalization stalled locally. The documented fallback captures actual CDP-rendered browser frames and encodes H.264 in the installed Chromium, with lighter capture load and no game timing changes. Partial native files are excluded from the approved clip manifest.
-
-## Commands
+## Run and reuse
 
 ```powershell
 npm.cmd ci
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd test
 npm.cmd run build
-npm.cmd run test:e2e
 npm.cmd start
 ```
 
-Application: `http://localhost:4173/play`; overlay: `/overlay`; simulator: `/dev`; independent signal panel: `/example`. Stop a server on port 4173 before the browser suite, which owns that port.
+Open `http://localhost:4173/play`; overlay `/overlay`; simulator `/dev`; second integration `/example`. Unlock with the private terminal code. Simulator requires no Twitch credentials. See [TWITCH_SETUP.md](TWITCH_SETUP.md) for each broadcaster's own app configuration and consent. Never record or commit secrets.
 
 ```powershell
-# Normal-control local synthetic capture; owns port 4175:
-npm.cmd exec tsx -- scripts/submission/record.ts
-# After the three required review takes finalize:
-node scripts/submission/render.mjs
+npm.cmd test
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run test:core:offline
+npm.cmd run verify:package
+npm.cmd run test:e2e
 ```
 
-Recording helpers: `scripts/submission/record.ts`, `capture.ts`, `render.mjs`. Raw sources/screenshots/report: `submission/footage/`. Review, plan and playback validation: `submission/render/`. These media directories are Git-ignored; source and instructions are committed.
+Stop the port-4173 server before browser tests. [INTEGRATING_YOUR_GAME.md](INTEGRATING_YOUR_GAME.md) explains built-archive installation, generic actions and existing adapter wiring. A developer must connect game effects; this is not an automatic mod for arbitrary games.
 
-## Manual work still required
+## Final video and submission
 
-1. Register the Twitch app, privately configure `.env`, restart and authorize the broadcaster **with recording stopped**. Exact current setup is in `RECORDING_CHECKLIST.md` and `TWITCH_SETUP.md`.
-2. Record actual Twitch route and cooperative clips (`submission/manual/live-route.mp4`, `live-gate.mp4`) showing command → accepted count → natural resolution → actual consequence.
-3. Record 20 seconds of this genuine main Codex build thread to `submission/manual/codex-build.mp4`. Keep secrets/authentication off camera. Obtain the actual session ID with `/status`; no ID is fabricated.
-4. Record the narration, replace missing/stand-in slots, inspect the final beginning/middle/end and all required segments, verify MP4 playback and duration under 180 seconds. The automated review is not a final submission.
-5. Review the factual Devpost draft and eligibility, repository access and video requirements. No upload, publishing or submission was performed or authorized here.
+Final path: `D:/Comeback/CheckPoint/submission/final/checkpoint-submission.mp4`. The edit includes real Twitch decisions, simulated reliability, actual SDK usage, genuine Codex and the real ending. Offline Microsoft Zira provides English narration; no source microphone/system audio or music is included. Target: 160 seconds, 1920x1080 H.264/AAC.
 
-## Official requirements rechecked
+Read measured metadata and inspection details in `submission/final/validation.json` and [FINAL_VIDEO_EDIT.md](FINAL_VIDEO_EDIT.md). Source times are in `edit-manifest.json`. Earlier INCOMPLETE/PENDING-CODEX files are superseded review cuts. Media, archives, local codes and credentials remain Git-ignored.
 
-Reviewed on **31 October 2026**: [overview](https://twitchcon-codex.devpost.com/), [resources](https://twitchcon-codex.devpost.com/resources), [rules](https://twitchcon-codex.devpost.com/rules). The entry requires a runnable source repository, description of features/Codex usage, real main-thread session ID, and a public YouTube demonstration under three minutes showing Twitch functionality and Codex build evidence. Current deadline: **2 November 2026, 2 PM Pacific**, **3 November 2026, 3:30 AM Asia/Kolkata**. Publication is a later owner action, not part of this task.
+Owner actions remain: watch the final file with sound, upload it to YouTube, supply the video and accessible repository links, provide the actual main-build Codex session ID, review eligibility and project text, then submit Devpost and retain confirmation. A saved draft is not a submission. Nothing has been uploaded, published or submitted here.
 
-## Checks completed in this phase
-
-- Strict typecheck, lint, production build: passed.
-- Unit/security suite: **45 passed**.
-- Browser: all **5 scenarios** passed across the full run (4 passed, 1 transient read-reset failure) and a focused crew rerun (1 passed). Read-only polling now retries transient resets; controls are never retried automatically.
-- Live Twitch: **not verified**; app credentials/authorization absent.
-- Media: count only the three finalized H.264 review sources. The supplemental failure take is incomplete and excluded. Render validation is stored separately in submission/render/validation.json.
-
-Local review MP4 validated: **159.849 seconds, 1920×1080, H.264, silent**, 7,113,040 bytes. Complete-file browser playback and beginning/middle/end frame inspection passed. The file remains clearly labeled **INCOMPLETE** because live Twitch, genuine Codex desktop footage and recorded narration are missing. See `submission/render/validation.json`. No media was uploaded.
+See [DEVPOST_DRAFT.md](DEVPOST_DRAFT.md) and [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md). Official [overview](https://twitchcon-codex.devpost.com/) and [resources](https://twitchcon-codex.devpost.com/resources) require source access, project/Codex description, main-build session ID and a video under three minutes showing Twitch operation and Codex use. Follow the official rules/countdown for the deadline.

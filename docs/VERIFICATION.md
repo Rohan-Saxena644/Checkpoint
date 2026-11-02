@@ -1,19 +1,21 @@
 # Verification record
 
+**2 November handoff:** 47 tests, strict type checking and production build passed again on camera. The core six-file archive verifier passed again offline. Both built archives were then installed together into a fresh external ESM/TypeScript consumer, with Node/WebSocket declarations; compilation and public-export construction/adapter-host wiring passed. Dependency installation required registry access because the local npm cache lacked the adapter dependency archives. The consumer runtime used the network-denial preload and inherited no Twitch secrets. This is package-consumption verification, not another live Twitch test. See [game integration instructions](INTEGRATING_YOUR_GAME.md).
+
 Build and verification completed across 30–31 October 2026, Node 22.16 on Windows. Run commands from the repository root (use `npm.cmd` in PowerShell if necessary).
 
-| Check                                                                                         | Status                                                              |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| TypeScript strict type check                                                                  | Passed                                                              |
-| ESLint                                                                                        | Passed                                                              |
-| Vitest core, synthetic Twitch, game authority and controller security                         | **47 tests passed across 5 files on 1 November**                     |
-| Production packages, browser bundle and Node build                                            | Passed                                                              |
-| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **All 5 scenarios passed across the final run and focused retry**   |
-| Independent console signal-panel integration                                                  | Passed: two generic participants, cyan result, one applied effect   |
-| Desktop, mobile and OBS overlay screenshots                                                   | Captured and visually inspected; screenshots in `docs/screenshots/` |
+| Check                                                                                         | Status                                                                    |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| TypeScript strict type check                                                                  | Passed                                                                    |
+| ESLint                                                                                        | Passed                                                                    |
+| Vitest core, synthetic Twitch, game authority and controller security                         | **47 tests passed across 5 files on 1 November**                          |
+| Production packages, browser bundle and Node build                                            | Passed                                                                    |
+| Playwright real keyboard crew expedition, recovery, no-viewer play, restart and mobile layout | **All 5 scenarios passed across the final run and focused retry**         |
+| Independent console signal-panel integration                                                  | Passed: two generic participants, cyan result, one applied effect         |
+| Desktop, mobile and OBS overlay screenshots                                                   | Captured and visually inspected; screenshots in `docs/screenshots/`       |
 | Live OAuth and real single-channel Twitch commands                                            | **Passed 1 November: route, supply, cooperative goal and winning ending** |
-| Standard-mode 3–5-minute play balance                                                         | Design target; no user playtest or timing study claimed             |
-| Public deployment, video, npm release, repository publication and submission                  | Not performed                                                       |
+| Standard-mode 3–5-minute play balance                                                         | Design target; no user playtest or timing study claimed                   |
+| Public deployment, video, npm release, repository publication and submission                  | Not performed                                                             |
 
 ## Library reusability verification · 0.2.0
 

@@ -1,5 +1,7 @@
 # Clip manifest
 
+**Final-edit sources — 2 November:** the owner supplied `Screen Recording 2026-11-02 005830.mp4` (155.5 seconds, real Twitch/game) and `Screen Recording 2026-11-02 113326.mp4` (36 seconds, genuine Codex test/build thread; copied to `submission/manual/codex-build.mp4`). The final plan uses 20 seconds from Codex source time 8 seconds, plus real route/supply/goal and ending. The reliability and SDK sources below remain in use. The older pending/manual rows describe the earlier review stage and are superseded by `submission/final/edit-manifest.json` and [FINAL_VIDEO_EDIT.md](FINAL_VIDEO_EDIT.md). Source audio is excluded; English narration uses the offline Windows voice. No source or output has been uploaded.
+
 Target edit: **160s**. Automated source times are emitted to `submission/footage/capture-report.json`; `review-plan.json` describes the actual cuts. Files remain local and Git-ignored. Count only finalized, decoded files as usable evidence.
 
 | File                                                                          | Evidence type                                        | Use / status                                                                                                                                                                                                    |

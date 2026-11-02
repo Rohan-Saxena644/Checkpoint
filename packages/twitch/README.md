@@ -4,6 +4,8 @@ Experimental **0.2.0**, MIT. Node **22.13+**, ESM only. This package depends on 
 
 Build from the repository root with `npm run build:packages`. Public imports come from `@checkpoint/twitch`; JavaScript and declarations are in `dist/`. Nothing is published to npm. To make a local archive run `npm pack -w @checkpoint/twitch --pack-destination .local/packages`; install a local core archive first in an external project.
 
+For a strict TypeScript Node host, also install development declarations with `npm install --save-dev typescript @types/node @types/ws`. These are development tools, not core runtime dependencies. The adapter's declarations expose the optional WebSocket factory used for testing.
+
 ```ts
 import { Interaction } from "@checkpoint/core";
 import { TwitchAdapter } from "@checkpoint/twitch";
@@ -40,4 +42,4 @@ The normalizer controls chat grammar and must map only eligible commands/actions
 
 The showcase provides the complete protected callback/session flow. Its setup is documented in the repository's `docs/TWITCH_SETUP.md`. Required scope is `user:read:chat`; subscription is `channel.chat.message` v1. Tokens are memory-only, validated at startup and every 55 minutes, with serialized refresh, cold reconnect, planned handover and revocation handling. No replay/crash durability is promised. `stop` requires another `start(host)` before reauthorization. Never pass secrets into a browser or log provider errors verbatim.
 
-Only synthetic adapter tests have been completed; live Twitch verification requires registered app credentials and explicit broadcaster authorization. API stability is not promised; see CHANGELOG.md.
+Real OAuth/EventSub and route, supply and one-person cooperative commands were verified through a winning showcase run on 1 November 2026. Reconnect, revocation and larger-crew scenarios have separate synthetic coverage. Every new host must register its own app and obtain explicit broadcaster authorization. API stability is not promised; see CHANGELOG.md. The repository's `docs/INTEGRATING_YOUR_GAME.md` explains the local archive workflow and host responsibilities.

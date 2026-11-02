@@ -91,7 +91,7 @@ export const plan = [
     start: 130,
     duration: 20,
     file: "codex",
-    in: 0,
+    in: 8,
     title: "Built and verified with Codex",
     label: "GENUINE CODEX BUILD THREAD",
     caption:

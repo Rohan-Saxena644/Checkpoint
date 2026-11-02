@@ -31,7 +31,7 @@ Resolution happens once per window in the running authoritative process; the gam
 ## Remaining submission fields
 
 - Repository URL: **pending separate publication authorization**.
-- Public YouTube demo under three minutes: **pending recording and publication**.
+- YouTube demo under three minutes: **local edit prepared; owner upload/link pending**.
 - Live Twitch test: **passed; route, supply and one-participant cooperative goal through winning ending**.
 - Session ID: **pending actual `/status` output**.
 - Screenshots: use genuine captured game/overlay images; exclude secrets.
@@ -39,4 +39,4 @@ Resolution happens once per window in the running authoritative process; the gam
 
 ## Final-phase evidence disclosure
 
-The demonstrated workflow uses normal movement and unchanged 18-second windows, with pauses for preparation. The live test helper sends ordinary protected movement controls; it does not teleport the courier or alter game rules. The owner supplied a 155.5-second real Twitch/game screen recording showing accepted participation, shield, protection and ending. This is source footage, not the completed submission edit. Separate simulated verification covers no-viewer fallback, storm damage/restart, multi-person cooperation, overlay permissions and transport/input reliability. The final edit still needs genuine Codex build footage and an English explanation. The implementation uses Codex at build time, not runtime AI.
+The demonstrated workflow uses normal movement and unchanged 18-second windows, with pauses for preparation. The live test helper sends ordinary protected movement controls; it does not teleport the courier or alter game rules. The owner supplied actual Twitch/game footage and a genuine screen recording of the Codex test/build thread. The local edit combines real chat participation, shield, protection and ending with clearly labeled simulated reliability, actual SDK usage, genuine Codex evidence and English synthetic narration. Separate simulated verification covers no-viewer fallback, storm damage/restart, multi-person cooperation, overlay permissions and transport/input reliability. The implementation uses Codex at build time, not runtime AI. The owner must upload the final video and supply its link; nothing has been published automatically.

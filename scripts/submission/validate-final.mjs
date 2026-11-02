@@ -76,7 +76,9 @@ try {
     "Narration must decode and contain non-silent audio",
   );
   const frames = [];
-  for (const time of [2, 24, 48, 70, 90, 101, 118, 140, 157]) {
+  for (const time of [
+    2, 24, 38, 48, 53, 70, 82, 90, 101, 118, 126, 140, 148, 157,
+  ]) {
     await page.evaluate(async (t) => {
       const v = document.querySelector("video");
       await new Promise((r) => {
