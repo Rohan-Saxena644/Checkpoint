@@ -6,7 +6,7 @@ export const plan = [
     start: 0,
     duration: 12,
     file: "live",
-    in: 14,
+    in: 24,
     title: "Checkpoint — Give chat a role. Keep the game in control.",
     label: "REAL TWITCH · EASY MODE · ONE-PERSON CREW",
     caption:

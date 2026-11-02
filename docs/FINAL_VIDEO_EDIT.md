@@ -21,3 +21,9 @@ Without the Codex source, `node scripts/submission/render-final.mjs --preview` m
 Storyboard: 0:00 pitch; 0:12 live route; 0:41 live shield; 0:55 live cooperative goal; 1:25 simulated reliability; 1:45 SDK and local-button integration; 2:10 genuine Codex; 2:30 real winning ending; end 2:40. The live route and shield together occupy the planned 43-second live decision section. Exact cuts must be checked against the original causal sequence.
 
 Nothing is uploaded or published by these commands.
+
+## Local preview verification — 2 November
+
+`checkpoint-cut-PENDING-CODEX.mp4` decoded successfully: **159.8746 seconds, 1920×1080, H.264/AAC, 12,380,579 bytes**. The stereo narration track decoded for 158.66 seconds with nonzero signal (RMS 0.0825). Nine frames across all chapters were captured; live accepted route/supply/charge, simulated pause, SDK panel, missing-Codex card and winning ending were visually inspected. Source and captions are readable at full resolution; smaller source text in the simulated footage is softer. This checks decoding and non-silent audio, not a complete listening review.
+
+The opening source offset was subsequently adjusted from 14 to 24 seconds to avoid a paused-gameplay section; this improvement will be included in the next render. The preview remains incomplete until genuine Codex footage replaces its missing-source card, followed by final visual and listening review. Scripts pass repository lint. The underlying application has not been changed during editing.
