@@ -3,9 +3,28 @@ import { createServer } from "node:http";
 import { readFile, writeFile, appendFile, mkdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { ownerVideo, plan } from "./final-plan.mjs";
+import { subtitles } from "./subtitles.mjs";
 
 const output = path.resolve("submission/final");
 await mkdir(output, { recursive: true });
+let cursor = 0;
+const stamp = (seconds) =>
+  new Date(seconds * 1000).toISOString().slice(11, 23).replace(".", ",");
+for (const [start, end, text] of subtitles) {
+  if (start !== cursor || end <= start || !text)
+    throw Error("Subtitles must cover the full timeline without gaps");
+  cursor = end;
+}
+if (cursor !== 160) throw Error("Subtitle timeline must end at 160 seconds");
+await writeFile(
+  path.join(output, "checkpoint-submission.srt"),
+  subtitles
+    .map(
+      ([start, end, text], i) =>
+        `${i + 1}\n${stamp(start)} --> ${stamp(end)}\n${text}\n`,
+    )
+    .join("\n"),
+);
 const files = {
   live: process.env.CHECKPOINT_LIVE_VIDEO || ownerVideo,
   reliability: path.resolve("submission/footage/simulated-reliability.mp4"),
@@ -35,9 +54,6 @@ const server = createServer(async (req, res) => {
     if (Object.hasOwn(files, route)) {
       file = files[route];
       type = "video/mp4";
-    } else if (/^audio-[0-8]$/.test(route)) {
-      file = path.join(output, "audio", `segment-${route.slice(6)}.wav`);
-      type = "audio/wav";
     } else return res.writeHead(404).end();
     const bytes = await readFile(file);
     res
@@ -67,12 +83,9 @@ try {
   );
   await page.goto(origin + "/editor");
   const details = await page.evaluate(
-    async ({ plan, hasCodex, origin }) => {
+    async ({ plan, subtitles, hasCodex, origin }) => {
       const canvas = document.querySelector("canvas"),
         ctx = canvas.getContext("2d");
-      const audio = new AudioContext(),
-        destination = audio.createMediaStreamDestination();
-      await audio.resume();
       const videos = new Map(),
         metadata = [];
       for (const file of new Set(plan.map((p) => p.file))) {
@@ -97,27 +110,13 @@ try {
       }
       if (hasCodex && videos.get("codex").duration < 19.8)
         throw Error("Codex evidence must be at least 20 seconds");
-      const narration = [];
-      for (let i = 0; i < plan.length; i++) {
-        const response = await fetch(origin + "/audio-" + i);
-        if (!response.ok) throw Error("Missing narration " + i);
-        const buffer = await audio.decodeAudioData(
-          await response.arrayBuffer(),
-        );
-        if (buffer.duration > plan[i].duration - 0.1)
-          throw Error(`Narration ${i} too long: ${buffer.duration}`);
-        narration.push(buffer);
-      }
       const stream = canvas.captureStream(30);
-      for (const track of destination.stream.getAudioTracks())
-        stream.addTrack(track);
-      const mime = "video/mp4;codecs=avc1.42001E,mp4a.40.2";
+      const mime = "video/mp4;codecs=avc1.42001E";
       if (!MediaRecorder.isTypeSupported(mime))
-        throw Error("H264/AAC MP4 encoding unavailable");
+        throw Error("H264 MP4 encoding unavailable");
       const recorder = new MediaRecorder(stream, {
         mimeType: mime,
         videoBitsPerSecond: 7500000,
-        audioBitsPerSecond: 128000,
       });
       const pending = [];
       recorder.ondataavailable = (e) => {
@@ -145,16 +144,9 @@ try {
       };
       let current = -1,
         frames = 0;
-      const epoch = performance.now(),
-        audioEpoch = audio.currentTime;
+      const epoch = performance.now();
       recorder.start(1000);
-      // Synthetic narration is the only audio; source microphone/system audio is excluded.
-      for (let i = 0; i < plan.length; i++) {
-        const source = audio.createBufferSource();
-        source.buffer = narration[i];
-        source.connect(destination);
-        source.start(audioEpoch + plan[i].start + 0.15);
-      }
+      // Only canvas video is recorded. Voice, source audio and music are excluded.
       await new Promise((resolve, reject) => {
         const timer = setInterval(() => {
           try {
@@ -227,7 +219,10 @@ try {
             ctx.fillStyle = "#172a32";
             ctx.fillRect(0, 1000, 1920, 80);
             ctx.fillStyle = "#edf5f3";
-            wrap(part.caption, 28, 1032, 1860, 26);
+            const cue = subtitles.find(
+              ([start, end]) => elapsed >= start && elapsed < end,
+            );
+            wrap(cue?.[2] ?? part.caption, 28, 1031, 1860, 30);
             if (!hasCodex) {
               ctx.fillStyle = "#f3c78b";
               ctx.font = "bold 20px monospace";
@@ -247,15 +242,14 @@ try {
       await Promise.all(pending);
       for (const v of videos.values()) v.pause();
       for (const t of stream.getTracks()) t.stop();
-      await audio.close();
       return {
         metadata,
-        narrationDurations: narration.map((b) => b.duration),
+        audioTracks: stream.getAudioTracks().length,
         frames,
         mime,
       };
     },
-    { plan, hasCodex, origin },
+    { plan, subtitles, hasCodex, origin },
   );
   await writes;
   await writeFile(
@@ -265,8 +259,8 @@ try {
         status: hasCodex ? "RENDERED_AWAITING_INSPECTION" : "PENDING_CODEX",
         seconds: 160,
         hasCodex,
-        narration:
-          "Offline Microsoft Zira synthetic narration; no source audio or music",
+        narration: "None. Silent video with burned-in English subtitles.",
+        subtitles,
         segments: plan,
         ...details,
       },

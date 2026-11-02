@@ -34,7 +34,7 @@ Stop the port-4173 server before browser tests. [INTEGRATING_YOUR_GAME.md](INTEG
 
 ## Final video and submission
 
-Final path: `D:/Comeback/CheckPoint/submission/final/checkpoint-submission.mp4`. The edit includes real Twitch decisions, simulated reliability, actual SDK usage, genuine Codex and the real ending. Offline Microsoft Zira provides English narration; no source microphone/system audio or music is included. Target: 160 seconds, 1920x1080 H.264/AAC.
+Final path: `D:/Comeback/CheckPoint/submission/final/checkpoint-submission.mp4`. The edit includes real Twitch decisions, simulated reliability, actual SDK usage, genuine Codex and the real ending. The current version uses short burned-in English subtitles and has no voice, music or source audio track. Target: 160 seconds, 1920x1080 H.264.
 
 Read measured metadata and inspection details in `submission/final/validation.json` and [FINAL_VIDEO_EDIT.md](FINAL_VIDEO_EDIT.md). Source times are in `edit-manifest.json`. Earlier INCOMPLETE/PENDING-CODEX files are superseded review cuts. Media, archives, local codes and credentials remain Git-ignored.
 

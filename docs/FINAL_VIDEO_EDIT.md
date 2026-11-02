@@ -1,18 +1,19 @@
 # Final video edit
 
-The edit uses the owner's real Twitch/game screen recording from 2 November, existing explicitly simulated reliability footage, and actual SDK-example footage. Playback stays at normal speed; travel and preparation are cut between sections. The one-person preset is labeled accurately. The English voice is offline Microsoft Zira synthetic speech, not the entrant's voice. Source microphone/system audio and background music are excluded.
+**Current upload file:** `submission/final/checkpoint-submission.mp4` is now the **silent, subtitled** version requested by the owner. Verified duration **159.904967 seconds**, 1920×1080 H.264, 12,462,136 bytes. MP4 handler inspection confirms **one video track and no audio track**. It has 27 short burned-in English cues, complete timeline coverage and a maximum reading rate of 13.8 characters/second. Beginning, middle, SDK, Codex and ending frames were visually inspected. Footage, cuts, timing and evidence labels are preserved. Older narrated measurements below describe superseded versions. The optional SRT is beside the MP4; it is not required for the burned-in text to appear.
+
+The edit uses the owner's real Twitch/game screen recording from 2 November, existing explicitly simulated reliability footage, and actual SDK-example footage. Playback stays at normal speed; travel and preparation are cut between sections. The one-person preset is labeled accurately. At the owner's request, the current final version is **silent, with short burned-in English subtitles**. Voice, source microphone/system audio and music are excluded. The previous voiced version is only a local backup.
 
 Required final source: a **genuine 20-second screen recording of the main Codex build thread**, saved to `submission/manual/codex-build.mp4`. Show actual implementation or passing verification. Do not show authentication, private codes or secrets. Do not recreate messages or session IDs. The final renderer refuses to run without this source; it checks decodability and duration, and the content must also be inspected by a person.
 
 From the repository root on Windows:
 
 ```powershell
-node scripts/submission/narrate.mjs
 node scripts/submission/render-final.mjs
 node scripts/submission/validate-final.mjs
 ```
 
-The live recording path is specified in `scripts/submission/final-plan.mjs`; override it with `CHECKPOINT_LIVE_VIDEO` if moved. All source times and narration are in that plan. Narration must fit each slot; the renderer rejects overflowing speech rather than cutting it off. No npm installation, network service or new editing dependency is required.
+The live recording path is specified in `scripts/submission/final-plan.mjs`; override it with `CHECKPOINT_LIVE_VIDEO` if moved. Source cuts remain in that plan. Current subtitles are in `scripts/submission/subtitles.mjs`, cover all 160 seconds, and are also written to `submission/final/checkpoint-submission.srt`. No voice generation or audio files are needed. No npm installation, network service or new editing dependency is required.
 
 Output: `submission/final/checkpoint-submission.mp4`, approximately 160 seconds, 1920×1080 H.264/AAC. `edit-manifest.json` records sources, speech duration and exact segments; `validation.json` records actual decoded duration, video dimensions and non-silent audio. Inspect all sections and beginning/middle/end frames, and listen to the finished file before uploading. Check captions, command acceptance and actual effect; ensure no unintended private material appears.
 

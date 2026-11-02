@@ -11,6 +11,35 @@ const name = manifest.hasCodex
   ? "checkpoint-submission.mp4"
   : "checkpoint-cut-PENDING-CODEX.mp4";
 const bytes = await readFile(path.join(dir, name));
+// Inspect actual MP4 handlers rather than trusting a muted player or manifest.
+function handlers(buffer, start = 0, end = buffer.length) {
+  const result = [];
+  for (let offset = start; offset + 8 <= end;) {
+    let size = buffer.readUInt32BE(offset),
+      header = 8;
+    const type = buffer.toString("ascii", offset + 4, offset + 8);
+    if (size === 1) {
+      size = Number(buffer.readBigUInt64BE(offset + 8));
+      header = 16;
+    }
+    if (size === 0) size = end - offset;
+    assert(size >= header && offset + size <= end, "Invalid MP4 box");
+    if (["moov", "trak", "mdia"].includes(type))
+      result.push(...handlers(buffer, offset + header, offset + size));
+    if (type === "hdlr")
+      result.push(
+        buffer.toString("ascii", offset + header + 8, offset + header + 12),
+      );
+    offset += size;
+  }
+  return result;
+}
+const trackHandlers = handlers(bytes);
+assert(trackHandlers.includes("vide"), "Video track must exist");
+assert(
+  !trackHandlers.includes("soun"),
+  "Subtitled version must contain no audio track",
+);
 const server = createServer((req, res) =>
   req.url === "/file"
     ? res
@@ -40,27 +69,10 @@ try {
       v.onloadeddata = r;
       v.onerror = j;
     });
-    const context = new AudioContext();
-    const sound = await context.decodeAudioData(data.slice(0));
-    const samples = sound.getChannelData(0);
-    let peak = 0,
-      sum = 0;
-    for (let i = 0; i < samples.length; i += 20) {
-      peak = Math.max(peak, Math.abs(samples[i]));
-      sum += samples[i] * samples[i];
-    }
-    const rms = Math.sqrt(sum / Math.ceil(samples.length / 20));
-    await context.close();
     return {
       duration: v.duration,
       width: v.videoWidth,
       height: v.videoHeight,
-      audio: {
-        channels: sound.numberOfChannels,
-        duration: sound.duration,
-        peak,
-        rms,
-      },
     };
   });
   assert(
@@ -69,12 +81,6 @@ try {
   );
   assert.equal(metadata.width, 1920);
   assert.equal(metadata.height, 1080);
-  assert(
-    metadata.audio.duration > 158 &&
-      metadata.audio.peak > 0.02 &&
-      metadata.audio.rms > 0.001,
-    "Narration must decode and contain non-silent audio",
-  );
   const frames = [];
   for (const time of [
     2, 24, 38, 48, 53, 70, 82, 90, 101, 118, 126, 140, 148, 157,
@@ -99,9 +105,15 @@ try {
       ? "PLAYBACK_VALIDATED_REQUIRES_VISUAL_REVIEW"
       : "INCOMPLETE_CODEX_REQUIRED",
     ...metadata,
+    audio: {
+      tracks: 0,
+      verifiedHandlers: trackHandlers,
+      description: "Silent; no audio track",
+    },
     bytes: bytes.length,
     frames,
-    narration: "Offline synthetic voice; no music or source audio",
+    narration:
+      "None. Burned-in English subtitles; no voice, music or source audio.",
     missing: manifest.hasCodex ? [] : ["Genuine 20-second Codex footage"],
   };
   await writeFile(
