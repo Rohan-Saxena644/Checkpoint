@@ -1,91 +1,113 @@
-# Checkpoint
+﻿# Checkpoint
 
 **Give chat a role. Keep the game in control.**
 
-Checkpoint is a TypeScript SDK for game-defined participation windows. The game decides when chat can act, which actions count, when voting ends, and how a predictable result changes play.
+An open-source TypeScript SDK that turns Twitch chat into game decisions. Its playable showcase, **The Last Beacon**, lets viewers choose routes, send supplies, and power protection while the streamer pilots the courier.
 
-**The Last Beacon** is its playable showcase: pilot a courier through four compact regions, dodge telegraphed storm strikes, collect beacon fragments, and invite your crew to choose a route, send supplies, and power the final protective field. Original procedural Canvas artwork; no runtime AI, paid services, downloaded game assets, or audio dependencies.
+**[Watch the 2:40 demo on YouTube](https://youtu.be/oaqdCqaklxE)** · [Connect your own game](docs/INTEGRATING_YOUR_GAME.md) · [Core API](packages/core/README.md) · [Contribute](CONTRIBUTING.md)
 
 ![The Last Beacon expedition console](docs/screenshots/expedition.png)
 
-## Run locally
+## Choose where to start
 
-Requires Node **22.13+** (tested with 22.16) and npm. Use the repository root for every command. On Windows PowerShell use `npm.cmd` / `npx.cmd` if script execution blocks `npm` / `npx`.
+| I want to…                                | Start here                                                             |
+| ----------------------------------------- | ---------------------------------------------------------------------- |
+| Try the game without a Twitch account     | [Run the showcase](#run-the-showcase-no-twitch-required)               |
+| Play with my own Twitch chat              | [Connect your Twitch channel](#connect-your-twitch-channel)            |
+| Add interactions to my own game           | [Use the SDK](#use-the-sdk-in-your-own-project)                        |
+| Understand the architecture or contribute | [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) |
+
+**Experimental API · 0.2.0 · MIT.** The core has zero runtime dependencies. Adapting another game requires developer access to its code or an integration provided by its developer; Checkpoint is not an automatic mod for arbitrary games.
+
+## Run the showcase (no Twitch required)
+
+Requires **Node.js 22.13+** (tested on 22.16), npm, and a modern browser. Initial dependency installation needs internet access or a populated npm cache. On Windows PowerShell, use `npm.cmd` instead of `npm` if script execution is blocked.
 
 ```sh
+git clone https://github.com/Rohan-Saxena644/Checkpoint.git
+cd Checkpoint
 npm ci
 npm run build
 npm start
 ```
 
-Open **http://localhost:4173/play**. The server prints a private streamer control code. Enter it in **Unlock streamer controls**; then **Begin expedition**. No credentials are needed for simulator mode. Do not show the private code on stream.
+Already have the repository? Start at `npm ci`. Run commands from its root.
 
-For development with Vite middleware and browser hot updates:
+1. Open **http://localhost:4173/play** using `localhost` consistently.
+2. Copy the private control code printed in the server terminal into **Unlock streamer controls**, then click **Unlock console**. Keep that code off stream.
+3. Select **Simulator**, **Easy expedition**, and the one-person crew preset for a first run. Click **Begin expedition**.
+4. Move with **WASD or arrow keys**. Collect **2 amber fragments** in each of the first three regions, then reach the beacon on the right. Leave yellow warning rings before they become red storm strikes. Cross the final region to win.
+5. At a checkpoint, use the simulator command buttons to supply clearly labeled synthetic participation. You can also send nothing and observe the safe fallback. `/dev` provides the simulator inspector.
 
-```sh
-npm run dev
-```
+No `.env`, Twitch account, or paid API is needed for simulator mode. The simulator does not generate automatic fake viewers. Game and interaction timers pause together; use **Resume expedition** on the pause screen or in the streamer controls to continue. Screen-recording controls are separate from game controls.
 
-SDK output must exist first (`npm run build` does this). Restart `npm run dev` after server/SDK changes. Browser source changes update automatically.
+### What chat can change
 
-```sh
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-npm run example
-```
+Each window normally lasts **18 seconds**. The streamer selects a crew preset of **1, 2, 5, or 10** before a run; the game does not guess viewer counts.
 
-Stop an existing server before browser tests: the suite owns port 4173. Test screenshots and the HTML report are written to ignored `test-results/` and `playwright-report/`. No live credentials are used by tests.
-
-## Play and broadcast
-
-- `/play`: expedition and authenticated streamer dashboard. WASD / arrows move; Escape pauses. Collect **2 fragments** per region, then enter the beacon ring on the right. Final region requires no fragments. Yellow dashed rings telegraph incoming red storm strikes. **Easy expedition** adds health, smaller hazards, and faster movement for judging. Standard mode targets roughly 3–5 minutes, depending on route and exploration; easy mode is quicker.
-- `/overlay`: read-only transparent OBS browser source. Use `http://localhost:4173/overlay`, width **640**, height **1000**, 30 FPS. Add the game via window/game capture separately. This overlay contains no control credential; do not add a control code to its URL. It shows exact commands, server time, accepted participation, and outcomes. Open it in an OBS browser source on the same machine.
-- `/dev`: explicitly synthetic input and bounded technical inspector. Choose a synthetic viewer. Try valid or invalid commands, repeated votes, duplicate deliveries (press twice), stale timestamps, old window IDs, disconnect/resume, and duplicate outcome application. Use **Crew signal → Cancel & use fair fallback** if recovery cannot complete. This explicitly allows offline play until the next checkpoint while retaining the disconnected label and original mode. In a live run, **Reconnect broadcaster** permits reauthorization without restarting.
-- `/example`: a tiny browser-only signal panel using `@checkpoint/core`, independent of the showcase game. `examples/signal-panel.ts` is its minimal console counterpart.
-
-The default simulator never creates automatic fake activity. Buttons submit only the synthetic commands you explicitly choose. Live mode rejects simulator inputs and never silently changes to simulator mode.
-
-| Crew moment | Commands                                          | Actual game consequence                                                                                                  | No-participation fallback                                |
-| ----------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| Route       | `!route left`, `!route right`                     | Shatterpath: 6 hazards / 4 collectible opportunities. Stillwater: 2 hazards / 2 opportunities. Both require 2 fragments. | Stillwater                                               |
-| Supply      | `!supply shield`, `!supply heal`, `!supply boost` | Absorb one strike; restore up to 2 health; or +50% movement for 15 seconds of active play.                               | Healing                                                  |
-| Final gate  | `!charge`                                         | Distinct crew members meet an explicit preset of 1, 2, 5, or 10 to grant 12 seconds of protection.                       | 3 seconds of crossing grace; the storm remains dodgeable |
-
-Each interaction lasts 18 seconds unless the streamer explicitly resolves early. Movement is held at the checkpoint. Presets are selected **before** a run and are never inferred from chat participants. No-viewer play is supported.
+| Checkpoint | Chat commands                                       | Actual effect                                                                                                            | No-input fallback           |
+| ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| Route      | `!route left` / `!route right`                      | Shatterpath: 6 hazards and 4 salvage opportunities. Stillwater: 2 hazards and 2 opportunities. Both require 2 fragments. | Stillwater                  |
+| Supplies   | `!supply shield` / `!supply heal` / `!supply boost` | Absorb one strike; restore up to 2 health; or move 50% faster for 15 seconds of active play.                             | Healing                     |
+| Final gate | `!charge`                                           | Distinct participants meet the chosen target to grant 12 seconds of protection.                                          | 3 seconds of crossing grace |
 
 ## Connect your Twitch channel
 
-See [docs/TWITCH_SETUP.md](docs/TWITCH_SETUP.md) for the complete setup and verified official references. In brief:
+You need your own Twitch developer app and explicit broadcaster authorization. Follow the complete [Twitch setup guide](docs/TWITCH_SETUP.md) for screenshots-independent setup details and official references.
 
-1. Register your own confidential Twitch developer app, with exact redirect URL `http://localhost:4173/auth/twitch/callback`. Enable account 2FA and verify your email.
-2. Copy `.env.example` to `.env` and enter `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. Keep the origin/redirect URL consistent; use **localhost**, not a different hostname, in your browser.
-3. Restart the server, unlock controls, select **Twitch**, then **Authorize broadcaster**. Sign in as the broadcaster whose channel will supply commands. This app supports that one account/channel, not a separate cloud bot.
-4. After the dashboard says connected, begin a **Twitch** expedition. In ordinary channel chat, use the displayed commands. Only the currently appropriate window accepts them.
+1. Register a **Confidential** Twitch application with the exact redirect URL:
+   `http://localhost:4173/auth/twitch/callback`.
+2. Copy `.env.example` to **`.env`** in the repository root. Set `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` there. Keep the template unchanged; `.env` is Git-ignored. Never put the secret in browser code or a recording.
+3. Restart the server with `npm start`, open `/play`, and unlock its streamer controls using the new terminal code.
+4. Select **Twitch → Authorize broadcaster**. Sign in with the account whose channel will supply chat messages and accept the requested `user:read:chat` permission.
+5. Wait for **Twitch connected**, then begin a Twitch expedition. Open your channel's chat in another tab. Send the displayed command **while its window is running**, not while paused or after expiry.
 
-The adapter implements OAuth authorization-code exchange, `user:read:chat` only, startup and 55-minute validation, expiry refresh, EventSub `channel.chat.message` v1, delivery deduplication, keepalive monitoring, session transfer, cold reconnect/resubscription, bounded backoff, revocation and rate-limit reset handling. It does not send messages to chat. **Real OAuth/EventSub, route, supply and a one-person cooperative goal were verified through a winning run on 1 November 2026.** Larger crews and transport failures have separate synthetic coverage; see [verification](docs/VERIFICATION.md).
+The adapter receives `channel.chat.message` v1 over EventSub WebSockets. It does not send chat messages. Live mode rejects simulator inputs. Tokens stay in server memory; restarting requires authorization again. Reconnection cannot replay missed chat.
 
-## Use the SDK
+**Already verified live:** OAuth/EventSub, route, shield supply, and a one-person cooperative goal through a winning run. Larger crews and transport-failure scenarios have separate automated/simulated coverage. See [verification details](docs/VERIFICATION.md).
 
-**Experimental API, version 0.2.0.** Start with the [standalone core package guide](packages/core/README.md), [adapter contract](packages/core/README.md#minimal-adapter-interface), and [migration notes](packages/core/CHANGELOG.md). The core has zero runtime dependencies and no Twitch, Node, React, server or game imports. Definitions contain generic actions; chat grammar belongs to the showcase adapters. Browser compatibility does not make client-side votes trustworthy: real shared decisions belong in a trusted host.
+### Broadcast and other pages
 
-**Connecting your own game:** follow [the game integration guide](docs/INTEGRATING_YOUR_GAME.md) for local package installation, responsibilities and the existing Twitch adapter wiring. Streamers can run the included showcase; adapting another game requires access to its code or a developer-provided integration. This is not a universal mod or a hosted service.
+| Page       | Purpose                                                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `/play`    | Game and authenticated streamer controls                                                                                            |
+| `/overlay` | Read-only transparent OBS browser source; use `http://localhost:4173/overlay`, **640 × 1000**, 30 FPS. Capture the game separately. |
+| `/dev`     | Labeled synthetic input and inspector for pause/recovery, invalid, duplicate and late inputs                                        |
+| `/example` | Tiny local-button signal panel using the core, independent of the game and Twitch                                                   |
 
-This copyable two-participant example uses only public package exports and applies a repeated outcome once. It is also the existing console signal panel, not a new application.
+The overlay needs no control code. Keep privileged controls and secrets out of the broadcast. If transport recovery cannot complete, streamer controls offer an explicit **Cancel & use fair fallback** action; live data never silently becomes simulated input.
+
+## Use the SDK in your own project
+
+The SDK is not published to npm. Build a local package archive from this repository, then install it into your own ESM JavaScript/TypeScript project.
+
+```sh
+# From the Checkpoint repository root:
+npm ci
+npm run build:packages
+npm run verify:package
+```
+
+The last command verifies the core archive and creates `.local/packages/checkpoint-core-0.2.0.tgz`. In **your own project's directory**, install it using its actual absolute path:
+
+```sh
+npm install /absolute/path/to/Checkpoint/.local/packages/checkpoint-core-0.2.0.tgz
+```
+
+Quote paths containing spaces. Import through **`@checkpoint/core`**, not internal source paths. The archive includes built ESM JavaScript, TypeScript declarations, README, changelog, and MIT license. Core code works in Node and browser projects without Twitch, React, the game, or the showcase server.
+
+### A first choice, two participants, one effect
 
 ```ts
 import { BoundedSet, Interaction, type Outcome } from "@checkpoint/core";
 
-// No Twitch, server, game, React, network, or credentials. Use only public exports.
-let now = 1000;
-const windows = new Interaction(() => now);
+let now = 1000; // Injected clock makes this example reproducible.
+const interaction = new Interaction(() => now);
 const applied = new BoundedSet(128);
 let signal = "amber";
-let effectCount = 0;
-const window = windows.open(
+let effects = 0;
+
+const choice = interaction.open(
   "signal-001",
   {
     kind: "choice",
@@ -95,77 +117,67 @@ const window = windows.open(
   10000,
 );
 
-function apply(outcome: Outcome) {
-  if (outcome.windowId !== window.id || applied.has(outcome.id)) return false;
-  applied.add(outcome.id);
-  signal = outcome.value;
-  effectCount++;
-  return true;
+for (const id of ["participant-a", "participant-b"]) {
+  interaction.accept({
+    windowId: choice.id,
+    participantId: id,
+    inputId: `input-${id}`,
+    action: "cyan",
+    sentAt: now,
+  });
 }
-windows.accept({
-  windowId: window.id,
-  participantId: "participant-a",
-  inputId: "input-a",
-  action: "cyan",
-  sentAt: now,
-});
-windows.accept({
-  windowId: window.id,
-  participantId: "participant-b",
-  inputId: "input-b",
-  action: "cyan",
-  sentAt: now,
-});
+
 now += 10000;
-windows.tick(); // the host normally calls this from its own authoritative loop
-const outcome = windows.resolve()!; // returns the existing result after tick
+interaction.tick(); // Your host normally calls tick() in its own loop.
+const outcome = interaction.resolve()!;
+
+function apply(result: Outcome) {
+  if (result.windowId !== choice.id || applied.has(result.id)) return;
+  applied.add(result.id);
+  signal = result.value; // Replace this with your application's effect.
+  effects++;
+}
 apply(outcome);
-apply(outcome); // repeated delivery has no second effect
-if (signal !== "cyan" || effectCount !== 1)
-  throw new Error("Unexpected signal result");
-console.log(
-  `Signal: ${signal}; participants: ${outcome.participants}; effects applied: ${effectCount}`,
-);
+apply(outcome); // Repeated delivery does not apply another effect.
+console.log(signal, outcome.participants, effects); // cyan 2 1
 ```
 
-Run it with `npm run example`. For goals, define `{ kind: 'goal', action: 'contribute', target: 2, success: 'ready', fallback: 'not-ready' }`. Actions and effects are application-defined. The SDK handles participation rules, validation, timing, deterministic resolution and bounded deduplication. The host handles authorization/eligibility, trusted clocks, transport health, rate limits, effects and any persistence. Use a simple poll if you only need a displayed tally.
+Run the existing console version with `npm run example`, or try the local-button panel at `/example`. Use fresh IDs for real windows and deliveries.
 
-Verify independent reuse without registry access after dependencies are installed:
+For Twitch in your own Node host, follow [Connect your own game](docs/INTEGRATING_YOUR_GAME.md): it covers installing both archives, TypeScript declarations, adapter wiring, OAuth callbacks, and applying effects. See the [Twitch package guide](packages/twitch/README.md) for its public API and the [core guide](packages/core/README.md) for choices, cooperative goals, lifecycle events, and the small `InputAdapter` contract.
+
+**Checkpoint handles** validation, participation rules, timing, deterministic resolution, and bounded deduplication. **Your host handles** authenticated identities, eligibility, clock/transport health, game effects, and persistence. Twitch and the simulator both feed the same core; the game has no separate voting implementation.
+
+Use a simple poll if you only need a displayed tally. Browser compatibility does not make client-side votes trustworthy: authoritative shared decisions belong in a trusted host.
+
+## Development and checks
+
+After the initial build, `npm run dev` starts the server with Vite browser hot updates. Restart it after server/SDK changes.
 
 ```sh
-npm run test:core:offline
-npm run build:packages
-npm run verify:package
+npm test                    # Core, synthetic Twitch, game and security tests
+npm run typecheck
+npm run lint
+npm run test:core:offline    # Core with networking denied and secrets removed
+npm run verify:package      # Built archive consumed outside the monorepo
+npm run build
+npx playwright install chromium
+npm run test:e2e            # Browser suite owns port 4173; stop your server first
 ```
 
-The verifier packs `@checkpoint/core`, enforces an exact six-file allowlist, installs the archive into a temporary consumer outside the monorepo, compiles this same example against exported declarations, and executes it with networking denied. The core archive contains only ESM JavaScript, declarations, README, changelog, license and package metadata. No credentials or showcase assets are included. Nothing is published to npm. See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [licensing](docs/LICENSING.md), and [architecture](docs/ARCHITECTURE.md).
+Current evidence: **47 tests**, strict type checking, lint, production build, and independent package consumption passed. The browser scenarios cover progression, failure/restart, no-viewer fallback, crew participation, recovery, overlay permissions, and mobile layout. Automated Twitch tests use mocked transport; they are distinct from the live verification above.
 
-## Security and data
+## Operational limits
 
-The server binds to loopback by default. A fresh private random control code bootstraps HttpOnly, SameSite=Lax sessions lasting 12 hours. Every control mutation requires an exact Origin and authenticated cookie; OAuth uses a one-use expiring state bound to that session. Host checks defend against DNS rebinding. Public WebSockets are read-only, including sockets opened by an authenticated browser. Spectators can read public state, never mutate it. All inputs are validated, payloads and request rates are limited, and chat is never evaluated as code.
+- **Experimental 0.2.0:** long-term API stability is not promised. See the [changelog](CHANGELOG.md).
+- **Memory-only state:** restart discards windows, participation, game progress, deduplication history, and OAuth tokens. Outcome guards are bounded in-process protection, not crash-safe exactly-once delivery. Persistent recovery belongs to the host.
+- **One local authoritative process:** the showcase is not a hosted multi-tenant service. Static frontend hosting alone cannot run its Node/EventSub/WebSocket authority. Public deployment needs additional hosting, HTTPS, access-control and operational configuration.
+- **Private controls, public spectators:** control mutations require an authenticated session and matching Origin. The overlay and public WebSockets are read-only. Tokens are never exposed through the browser, overlay or public state.
 
-Twitch access/refresh tokens stay in server memory and are never sent to browser bundles, storage, state exports, logs, or overlay URLs. `.env` contains only your developer app configuration and is Git-ignored. By default there is no token file, chat transcript, analytics, database, or durable session. Only bounded transport IDs, current-window user participation, aggregates, and a 100-event inspector are retained in memory. The inspector omits chat text and user IDs. Reconnecting cannot replay missed Twitch chat. Restarting discards the run, tokens, cookies' server-side validity, and all windows.
+## Documentation and license
 
-This is a **single local authoritative process**. Ordinary static hosting cannot run its Twitch connection, game authority, or WebSocket server. No hosted instance has been deployed. Deliberate network exposure requires setting `HOST` and `PUBLIC_ORIGIN`, HTTPS, a WebSocket-capable reverse proxy, trusted access to the controller, and operational hardening beyond this local demo. Do not simply expose port 4173 to the public internet.
+[Game integration](docs/INTEGRATING_YOUR_GAME.md) · [Twitch setup](docs/TWITCH_SETUP.md) · [Architecture](docs/ARCHITECTURE.md) · [Verification](docs/VERIFICATION.md) · [Contributing](CONTRIBUTING.md)
 
-## Submission materials
+Checkpoint is **[MIT licensed](LICENSE)**. Game artwork is original procedural Canvas artwork; the game requires no runtime AI or paid service. Third-party dependency notices and asset provenance are documented in [Licensing](docs/LICENSING.md).
 
-- [Demo script under three minutes](docs/DEMO_SCRIPT.md)
-- [Devpost draft](docs/DEVPOST_DRAFT.md)
-- [Submission checklist with official sources](docs/SUBMISSION_CHECKLIST.md)
-- [Verification record, including real Twitch results](docs/VERIFICATION.md)
-
-The local submission-video handoff is documented in [FINAL_VIDEO_EDIT.md](docs/FINAL_VIDEO_EDIT.md). No deployment, npm release, repository publication, video upload or hackathon submission has been performed by these scripts. Obtain the real Codex session ID from the main build thread for the submission form; do not substitute a generated ID.
-
-MIT licensed. Checkpoint focuses on explicit game-controlled participation windows; it does not claim to be the first Twitch SDK or voting system.
-
-## Final verification and recording packet
-
-The feature set is frozen. Follow [the timestamped recording checklist](docs/RECORDING_CHECKLIST.md), [narration](docs/NARRATION.md) and [clip manifest](docs/CLIP_MANIFEST.md). From the repository root, after npm run build, run:
-
-```powershell
-npm.cmd exec tsx -- scripts/submission/record.ts
-node scripts/submission/render.mjs
-```
-
-These older capture/review commands produce labeled synthetic footage and a silent incomplete review. For the edit using the owner's real Twitch and Codex recordings, follow [FINAL_VIDEO_EDIT.md](docs/FINAL_VIDEO_EDIT.md). Final media stays in ignored `submission/final/`; inspect its validation record before release. Nothing is uploaded or published by the tools.
+Built with OpenAI Codex for the Codex x TwitchCon hackathon. [Watch the demo](https://youtu.be/oaqdCqaklxE). Submission and recording materials are kept separately in [the handoff](docs/FINAL_VERIFICATION.md).
