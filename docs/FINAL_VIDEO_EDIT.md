@@ -1,0 +1,23 @@
+# Final video edit
+
+The edit uses the owner's real Twitch/game screen recording from 2 November, existing explicitly simulated reliability footage, and actual SDK-example footage. Playback stays at normal speed; travel and preparation are cut between sections. The one-person preset is labeled accurately. The English voice is offline Microsoft Zira synthetic speech, not the entrant's voice. Source microphone/system audio and background music are excluded.
+
+Required final source: a **genuine 20-second screen recording of the main Codex build thread**, saved to `submission/manual/codex-build.mp4`. Show actual implementation or passing verification. Do not show authentication, private codes or secrets. Do not recreate messages or session IDs. The final renderer refuses to run without this source; it checks decodability and duration, and the content must also be inspected by a person.
+
+From the repository root on Windows:
+
+```powershell
+node scripts/submission/narrate.mjs
+node scripts/submission/render-final.mjs
+node scripts/submission/validate-final.mjs
+```
+
+The live recording path is specified in `scripts/submission/final-plan.mjs`; override it with `CHECKPOINT_LIVE_VIDEO` if moved. All source times and narration are in that plan. Narration must fit each slot; the renderer rejects overflowing speech rather than cutting it off. No npm installation, network service or new editing dependency is required.
+
+Output: `submission/final/checkpoint-submission.mp4`, approximately 160 seconds, 1920×1080 H.264/AAC. `edit-manifest.json` records sources, speech duration and exact segments; `validation.json` records actual decoded duration, video dimensions and non-silent audio. Inspect all sections and beginning/middle/end frames, and listen to the finished file before uploading. Check captions, command acceptance and actual effect; ensure no unintended private material appears.
+
+Without the Codex source, `node scripts/submission/render-final.mjs --preview` makes `checkpoint-cut-PENDING-CODEX.mp4` with a conspicuous incomplete label and missing-source card. **That is not a submission-ready video.** The preview uses the intended final narration script, whose Codex passage requires replacement of the missing footage before release.
+
+Storyboard: 0:00 pitch; 0:12 live route; 0:41 live shield; 0:55 live cooperative goal; 1:25 simulated reliability; 1:45 SDK and local-button integration; 2:10 genuine Codex; 2:30 real winning ending; end 2:40. The live route and shield together occupy the planned 43-second live decision section. Exact cuts must be checked against the original causal sequence.
+
+Nothing is uploaded or published by these commands.
